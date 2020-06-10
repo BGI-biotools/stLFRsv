@@ -1,0 +1,8 @@
+
+usage: getcon.pl <lnd.all file list> <bin_size> <extend_bin_num> <out_file>
+
+lnd.all file list: one all file one line, see the test.list for example
+
+bin_size: bin size used in the pipleine
+
+extend_bin_num: as the merge1 parameter in the pipeline

@@ -1,0 +1,36 @@
+Manually plot the heatmap for a specific region
+
+For same chr:
+perl Stat_share.pl bam mapq bin chr start end flank prefix withchr cut type
+
+For different chr or a far away distance on the same chr:
+perl Stat_share_dif.pl bam mapq bin chr1 start1 end1 chr2 start2 end2 flank prefix withchr cut type
+
+mapq: filter out reads with lower mapq;
+bin: stat size by n bp window;
+flank: flank size by n bp for the graph;
+withchr: use chr is same as input,set 0;else will add "chr" ahead for the chr parameter;
+cut:remove the highest parts of share barcode nums(0-1) by ratio,0 means not remove;
+type: 0 for stLFR bam and 1 for 10x bam(with BX tag)
+
+NOTE: the start and end need to be manually calculated with an extend length on your concerned position (sv_start-extend,sv_end+extend).
+
+########################################################################################
+Or you can use the batch mode conveniently.
+
+batch mode(for stLFRsv final file format):
+bat_plot.pl
+Usage: bat_plot.pl bam sv_final map_quality binsize extend_len cut PASS_only out_dir ncpu bam_type
+
+extend_len: extend length form two breakpoint(start-extend,end+extend). For the same chr, if two breakpoints are near within extend length, plot with Stat_share.pl, otherwise plot with Stat_share_dif.pl.
+binsize: as the bin above, better as the same with the binsize in stLFRsv pipeline.
+PASS_only：0 or 1，1 plot only the SVs with PASS flag and 0 plot all.
+bam_type: same with the type parameter above.
+sv_final: SV2.1 final file
+NOTE! You could change lines in bat_plot.pl 22-29 to adjust for other format file like a BED or BEDPE file.
+
+(for the bat_plot.pl, withchr and flank is fixed set to 0)
+
+
+
+

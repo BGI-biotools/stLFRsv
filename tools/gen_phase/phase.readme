@@ -1,0 +1,43 @@
+Pre-step for stLFRsv(not necessary but recommended)
+
+Generate the formated phase file for the stLFRsv pipeline, support only Hapcut2 phase block files currently.
+
+INPUT
+Hapcut2 phase block files
+
+OUTPUT
+region file: indicate the regions were phased
+barcode.phase: contains the barcode phase info(on PAT or MAT)
+
+Single-thread mode(2 steps)
+
+step 1
+Usage: 
+format_phase <hapcut_out_phase> <out_merged_region> <out_var_phase>
+Example:
+gen_phase/format_phase hapblock_L0_chr1 chr1.region chr1.vcf
+
+step 2
+Usage: 
+get_barcode_from_phase <refrence file> <bam file> <phase info> <out barcode info>
+Example:
+gen_phase/get_barcode_from_phase hg19.fa sorted.bam chr1.vcf chr1.barcode.phase
+
+NOTE；
+The refrence file should match the bam file which it generated form。
+And the file name should as the same as chromosome name in the reference file and the bam header.
+stLFRsv pipeline recognize these files by chromosome names.
+(hapblock_L0_XXX, XXX.region, XXX.vcf, XXX.barcode.phase)
+
+
+Multi-thread mode(1 step)：
+
+Usage:
+multi-run <ref> <bam> <phase_dir> <phase_prefix> <out_dir> <ncpu>
+example:
+gen_phase/multi-run hg19.fa sorted.bam ./hapcut2_phase hapblock_L0_ ./phase_out 20
+
+NOTE；
+The phase_dir is the directory which contains all Hapcut2 phase files together, 
+and the phase_prefix is used to recognize the files under phase_dir by chromosome names.("hapblock_L0_" in the example)
+ncpu is the threads number used.
