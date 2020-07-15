@@ -57,60 +57,35 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-help| |Show help message.|
 
 ###### Result file type（by generate order）：
-**sbf file**
-
-the binary segment file which generated form bam with the gap,bar_th,seg_th parameter.
-segment binary format：
-`(bar:int64)8byte(index:int32)4byte(contig_name:char)32byte(start:int32)4byte(end:int32)4byte(pe_count:int32)4byte`
-the `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-sbf.pl)
-
-**bfi file**
-
-binary index file for random access on sbf file
-index binary format:
-`(bar:int64)8byte(offset:int64)8bit`
-the `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-bfi.pl)
-
-**gap file**
-
-include all gaps form all segments(barcodes), can be used to gap statistic and parameter setting
-
-**stat file**
-
-include some statistical info from the bam 
-
-**sin file**
-
-single end cluster file，the `sin.raw` is the original sin file, and `sin` file is the merged file by `merge1` parameter
-
-**lnd.all file**
-
-all suspect breakpoints over low1 and low2 parameter.
-
-**lnd file**
-
-all passed breakpoints in lnd.all file that will be send to downstream analysis
-
-**lns file**
-
-segment link file, link the single end cluster to each segment
-
-**judge file**
-
-passed breakpoints judged by several quality filter 
-
-**filter file**
-
-filter by additional LFR rules like the `sc` parameter 
-
-**region file**
-
-mark breakpoints by black list file and control list file
-
-**final file**
-
-the final PASS SVs, and the `final.NoRegionFilter` is another final file that not considering the region markers
-
-**heatmap_plot folder**
-
-the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you wan
+**sbf file**  
+the binary segment file which generated form bam with the gap,bar_th,seg_th parameter.  
+segment binary format：  
+`(bar:int64)8byte(index:int32)4byte(contig_name:char)32byte(start:int32)4byte(end:int32)4byte(pe_count:int32)4byte`  
+the `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-sbf.pl)  
+**bfi file**  
+binary index file for random access on sbf file  
+index binary format:  
+`(bar:int64)8byte(offset:int64)8bit`  
+the `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-bfi.pl)  
+**gap file**  
+include all gaps form all segments(barcodes), can be used to gap statistic and parameter setting  
+**stat file**  
+include some statistical info from the bam   
+**sin file**  
+single end cluster file，the `sin.raw` is the original sin file, and `sin` file is the merged file by `merge1` parameter  
+**lnd.all file**  
+all suspect breakpoints over low1 and low2 parameter.  
+**lnd file**  
+all passed breakpoints in lnd.all file that will be send to downstream analysis  
+**lns file**  
+segment link file, link the single end cluster to each segment  
+**judge file**  
+passed breakpoints judged by several quality filter   
+**filter file**  
+filter by additional LFR rules like the `sc` parameter   
+**region file**  
+mark breakpoints by black list file and control list file  
+**final file**  
+the final PASS SVs, and the `final.NoRegionFilter` is another final file that not considering the region markers  
+**heatmap_plot folder**  
+the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you wan  
