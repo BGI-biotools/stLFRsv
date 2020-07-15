@@ -58,15 +58,15 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 
 ###### Result file type（by generate order）：
 **sbf file**  
-the binary segment file which generated form bam with the gap,bar_th,seg_th parameter.  
+the binary segment file which generated form bam with the gap,bar_th,seg_th parameter  
 segment binary format：  
 `(bar:int64)8byte(index:int32)4byte(contig_name:char)32byte(start:int32)4byte(end:int32)4byte(pe_count:int32)4byte`  
-the `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-sbf.pl)  
+the `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`(a simple read script at /src/bar-sort/read-sbf.pl)  
 **bfi file**  
 binary index file for random access on sbf file  
 index binary format:  
 `(bar:int64)8byte(offset:int64)8bit`  
-the `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-bfi.pl)  
+the `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`(a simple read script at /src/bar-sort/read-bfi.pl)  
 **gap file**  
 include all gaps form all segments(barcodes), can be used to gap statistic and parameter setting  
 **stat file**  
@@ -88,4 +88,4 @@ mark breakpoints by black list file and control list file
 **final file**  
 the final PASS SVs, and the `final.NoRegionFilter` is another final file that not considering the region markers  
 **heatmap_plot folder**  
-the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you wan  
+the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you want  
