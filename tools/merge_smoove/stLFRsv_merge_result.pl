@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 use strict;
 use FindBin qw($Bin);
-die "perl $0 stLFRsv.final smoove.vcf flank ratio break sample filt" if @ARGV<7;
+die "Usage:$0 <stLFRsv.final> <smoove.vcf> <flank> <ratio> <break> <sample> <filt>\n" if @ARGV<7;
 my $sv=shift;
 my $smoove=shift;
 my $flank=shift;
@@ -84,15 +84,29 @@ if($smoove=~/\.gz$/){
 	open IN2,"<$smoove" or die $!;
 }
 
+my @contig;
+my $chrn=0;
 while(<IN2>){
-	next if /^#/;
+	if (/^#/){
+		if(/^##contig=<ID=(.*?),/){
+			my $chr=$1;
+			$chr=~s/chr//;
+			next if length($chr)>2;
+			chomp;
+			$_=~s/chr//;
+			push @contig,$_;
+			next;
+		}else{
+			next;
+		}
+	}
 	chomp;
 	my @l=split;
 	$_=~/SVTYPE=(.*?);/;
 	my $type=$1;
 	my $merge=0;
 	my $info;
-	$l[0]=~s/chr//;
+	$_=~s/chr//g;
 	if($type=~/DEL|DUP|INV/){
 		$_=~/SVLEN=(.*?);END=(.*?);/;
 		my $len=abs($1);
@@ -143,7 +157,6 @@ while(<IN2>){
 		}elsif($1 eq "]N"){
 			$c="LR";
 		}
-		$l[4]=~s/chr//;
 		if(exists $type{"$type\_$l[0]"}){
 			for my $k(0..scalar(@{$type{"$type\_$l[0]"}})-1){
 				if($type{"$type\_$l[0]"}[$k][3] eq $c && abs($l[1] - $type{"$type\_$l[0]"}[$k][0])<=$flank ){
@@ -184,8 +197,6 @@ while(<IN2>){
 }
 close IN2;
 
-open OUT,">merge.dels.vcf" or die $!;
-open OUT2,">merge.other.sv.vcf" or die $!;
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
 my $y=$year+1900;
 my $m=$mon+1;
@@ -197,36 +208,23 @@ if(length($d)==1){
     $d="0".$d;
 }
 my $date=$y.$m.$d;
-open HE,"<$path/merge.dels.header" or die $!;
 
-while(<HE>){
-    if($_=~/fileDate/){
-        $_=~s/=(\d+)/=$date/;
-    }elsif($_!~/^##/){
-        chomp;
-        $_.="\t$sample\n";
-    }
-    print OUT $_;
-}
-close HE;
+&print_header_del($date,$sample);
+&print_header_other($date,$sample);
 
-open HE2,"<$path/merge.others.header" or die $!;
+open OUT,">>merge.dels.vcf" or die $!;
+open OUT2,">>merge.other.sv.vcf" or die $!;
 
-while(<HE2>){
-    if($_=~/fileDate/){
-        $_=~s/=(\d+)/=$date/;
-    }elsif($_!~/^##/){
-        chomp;
-        $_.="\t$sample\n";
-    }
-    print OUT2 $_;
-}
-close HE2;
 
 my ($c1,$c2);
 my $line;
 $c1=$c2=0;
-for my $k(1..22){
+for my $k(1..24){
+	if($k==23){
+		$k="X";
+	}elsif($k==24){
+		$k="Y";
+	}
 	for my $kk (sort {$a<=>$b }keys %{$hash{$k}}){
 		for my $kkk (@{$hash{$k}{$kk}}){
 			if($kkk=~/DEL/){
@@ -247,46 +245,46 @@ for my $k(1..22){
 		}
 	}
 }
-for my $k (sort {$a<=>$b} keys %{$hash{"X"}}){
-	for my $kk (@{$hash{"X"}{$k}}){
-		if($kk=~/DEL/){
-			$c1+=1;
-			chomp $kk;
-			my @t=split/\t/,$kk;
-			$t[2]=$c1;
-			$line=join"\t",@t;
-			print OUT "$line\n";
-		}else{
-			$c2+=1;
-			chomp $kk;
-			my @t=split/\t/,$kk;
-			$t[2]=$c2;
-			$line=join"\t",@t;
-			print OUT2 "$line\n";
-		}
-	}
-}
-
-for my $k (sort {$a<=>$b} keys %{$hash{"Y"}}){
-	for my $kk (@{$hash{"Y"}{$k}}){
-		if($kk=~/DEL/){
-			$c1+=1;
-			chomp $kk;
-			my @t=split/\t/,$kk;
-			$t[2]=$c1;
-			$line=join"\t",@t;
-			print OUT "$line\n";
-		}else{
-			$c2+=1;
-			chomp $kk;
-			my @t=split/\t/,$kk;
-			$t[2]=$c2;
-			$line=join"\t",@t;
-			print OUT2 "$line\n";
-		}
-	}
-
-}
+#for my $k (sort {$a<=>$b} keys %{$hash{"X"}}){
+#	for my $kk (@{$hash{"X"}{$k}}){
+#		if($kk=~/DEL/){
+#			$c1+=1;
+#			chomp $kk;
+#			my @t=split/\t/,$kk;
+#			$t[2]=$c1;
+#			$line=join"\t",@t;
+#			print OUT "$line\n";
+#		}else{
+#			$c2+=1;
+#			chomp $kk;
+#			my @t=split/\t/,$kk;
+#			$t[2]=$c2;
+#			$line=join"\t",@t;
+#			print OUT2 "$line\n";
+#		}
+#	}
+#}
+#
+#for my $k (sort {$a<=>$b} keys %{$hash{"Y"}}){
+#	for my $kk (@{$hash{"Y"}{$k}}){
+#		if($kk=~/DEL/){
+#			$c1+=1;
+#			chomp $kk;
+#			my @t=split/\t/,$kk;
+#			$t[2]=$c1;
+#			$line=join"\t",@t;
+#			print OUT "$line\n";
+#		}else{
+#			$c2+=1;
+#			chomp $kk;
+#			my @t=split/\t/,$kk;
+#			$t[2]=$c2;
+#			$line=join"\t",@t;
+#			print OUT2 "$line\n";
+#		}
+#	}
+#
+#}
 
 sub min {
 	my $min = shift;
@@ -303,4 +301,45 @@ sub max {
 		$max = $_ if $_ > $max;
 	}
 	return $max;
+}
+
+sub print_header_del{
+	my $date=shift;
+	my $sample=shift;
+	open OUT,">merge.dels.vcf" or die $!;
+	print OUT "##fileformat=VCFv4.2\n";
+	print OUT "##FILTER=<ID=PASS,Description=\"All filters passed\">\n";
+	print OUT "##fileDate=$date\n";
+	print OUT "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+	print OUT "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">\n";
+	print OUT "##INFO=<ID=SVLEN,Number=.,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">\n";
+	print OUT "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">\n";
+	print OUT "##INFO=<ID=SOURCE,Number=.,Type=String,Description=\"Source of structural variant\">\n";
+	print OUT "##ALT=<ID=DEL,Description=\"Deletion\">\n";
+	print OUT join"\n",@contig;
+	print OUT "\n";
+	print OUT "##source=stLFRsv+smoove\n";
+	print OUT "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample\n";
+	close OUT;
+}
+
+sub print_header_other{
+	my $date=shift;
+	my $sample=shift;
+	open OUT2,">merge.other.sv.vcf" or die $!;
+	print OUT2 "##fileformat=VCFv4.2\n";
+	print OUT2 "##FILTER=<ID=PASS,Description=\"All filters passed\">\n";
+	print OUT2 "##fileDate=$date\n";
+	print OUT2 "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+	print OUT2 "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">\n";
+	print OUT2 "##INFO=<ID=SVLEN,Number=.,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">\n";
+	print OUT2 "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">\n";
+	print OUT2 "##INFO=<ID=SOURCE,Number=.,Type=String,Description=\"Source of structural variant\">\n";
+	print OUT2 "##ALT=<ID=DUP,Description=\"Duplication\">\n";
+	print OUT2 "##ALT=<ID=INV,Description=\"Inversion\">\n";
+	print OUT2 join"\n",@contig;
+	print OUT2 "\n";
+	print OUT2 "##source=stLFRsv+smoove\n";
+	print OUT2 "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample\n";
+	close OUT2;
 }
