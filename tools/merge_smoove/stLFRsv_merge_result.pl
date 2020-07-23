@@ -101,12 +101,12 @@ while(<IN2>){
 		}
 	}
 	chomp;
+	$_=~s/chr//g;
 	my @l=split;
 	$_=~/SVTYPE=(.*?);/;
 	my $type=$1;
 	my $merge=0;
 	my $info;
-	$_=~s/chr//g;
 	if($type=~/DEL|DUP|INV/){
 		$_=~/SVLEN=(.*?);END=(.*?);/;
 		my $len=abs($1);
