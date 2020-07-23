@@ -44,6 +44,7 @@ my $qc2;
 my $qc3;
 my $rlen;
 my $mlen;
+my $sp;
 my $help;
 
 
@@ -52,7 +53,7 @@ my $Basename=basename($0);
 my $USAGE = qq{
 Name:
 	$Basename
-	version 2.1.2
+	version 2.2pre
 Function:
 	Detect the SVs from stLFR WGS data
 Usage:
@@ -82,6 +83,7 @@ Options:
 	-qc1 <float> valid read pair ratio for SV detection.[default 0.60]
 	-qc2 <float> average read pair count for one barcode.[default 30]
 	-qc3 <float> average segment end count for one bin.[default 8]
+	-sp <float> sample percentage for DNA fragment length statistic.[default 0.1]
 	-rlen <int> read length of one read.[default 100]
 	-mlen <int> physical limit for the long DNA segment.[default 400000]
 	-help Show this message.
@@ -112,6 +114,7 @@ $qc2 ||=30;
 $qc3 ||=8;
 $rlen ||=100;
 $mlen ||=400000;
+$sp ||=0.1;
 
 my $valid;
 $valid = GetOptions(
@@ -140,6 +143,7 @@ $valid = GetOptions(
 "qc1=f" => \$qc1,
 "qc2=f" => \$qc2,
 "qc3=f" => \$qc3,
+"sp=f" => \$sp,
 "rlen=i" => \$rlen,
 "mlen=i" => \$mlen
 );
@@ -230,27 +234,62 @@ if($q3 < $qc3){
 	print STDERR "Warning: average segment end in one bin is lower than $qc3, the result may be unreliable!\n";
 }
 
-my $R = Statistics::R->new();
-my $cmd=qq{
+my ($s1,$s2,$s3,$bin_r);
+if(1){
+	my $R = Statistics::R->new();
+	my $cmd=qq{
 a = read.table("$out/$bamname.gap")
 x<-a[,1]
-x<-x[which(x>$rlen)]
 x<-x[which(x<$mlen)]
+ratio<-length(which(x < $bin))/length(x)
+x<-x[which(x>$rlen)]
 len1<-quantile(x,0.65)
 len2<-quantile(x,0.93)
 len3<-quantile(x,0.98)
 };
-$R->run($cmd);
-my $s1=$R->get('len1');
-my $s2=$R->get('len2');
-my $s3=$R->get('len3');
-$s2=int($s2/$s1+0.5);
+	$R->run($cmd);
+	$s1=$R->get('len1');
+	$s2=$R->get('len2');
+	$s3=$R->get('len3');
+	$bin_r=$R->get('ratio');
+	$s2=int($s2/$s1+0.5);
+}
 print STDERR "According to the read pair distance statistic:\n";
 print STDERR "bin size should be set around $s1\n";
 print STDERR "merge bin number should be set around $s2\n";
 print STDERR "gap size should be set around $s3\n";
 ###########################
+my $bar_max=$vbar*$sp;
+my %bar_freq;
+$bar_max= 2000000 if $bar_max < 2000000;
+open IN,"$out/$bamname.seg" or die $!;
+my @one_bar;
+my $countbar=0;
+while(<IN>){
+	last if $countbar == $bar_max;
+	chomp;
+	my $clen=$_;
+	if($clen == 0xFFFFFFFF){
+		if(@one_bar > 0){
+			&process_bar;
+			@one_bar=();
+			$countbar++;
+		}
+	}else{
+		push @one_bar,$clen;
+	}
+}
 
+close IN;
+
+open OUT,">$out/$bamname.freq" or die $!;
+foreach my $key(sort {$a <=> $b} keys %bar_freq){
+	my $f_ratio=($bar_freq{$key}->[0]/$bar_freq{$key}->[1])*$bin_r;
+	print OUT "$key\t$f_ratio\n";
+}
+close OUT;
+
+###########################
 print STDERR "Step_1 single end cluster\n";
 $line="sin-cluster $out/$bamname.sbf $out/$bamname.sin $bin";
 
@@ -286,7 +325,7 @@ if(executeSystemCall($line)){
 
 #step5
 print STDERR "Step_5 judge the link Quality\n";
-$line="judge-link $out/$bamname.sin $out/$bamname.sln $bam $phase_dir $out/$bamname.judge $bin $ncpu";
+$line="judge-link $out/$bamname.lnd.all $out/$bamname.sln $bam $out/$bamname.freq $phase_dir $out/$bamname.judge $bin $gap $Nmerge $ncpu";
 if(executeSystemCall($line)){
 	die "Failure during creating the judgement file $out/$bamname.judge\n";
 }
@@ -317,7 +356,7 @@ if(executeSystemCall($line)){
 
 #step9
 print STDERR "Step_9 plot heatmaps for final output\n";
-my $ext=2*$gap;
+my $ext=3*$gap;
 $line="bat_plot $bam $out/$bamname.final 0 $bin $ext 0 1 $out/heatmap_plot $ncpu 0";
 if(executeSystemCall($line)){
 	die "Failure during plotting the heatmaps\n";
@@ -370,6 +409,38 @@ sub executeSystemCall {
   return($problem);
 }
 
+sub process_bar{
+	@one_bar=sort {$a <=> $b} @one_bar;
+	my $total_len=0;
+	foreach my $l (@one_bar){
+		$total_len+=$l;
+	}
+
+	for(my $i=$bin;$i<=$mlen;$i+=$bin){
+		my $cur_len=0;
+		foreach my $l (@one_bar){
+			if($l >= $i){
+				$cur_len+=$l-$i;
+			}
+		}
+		
+		my $ratio;
+		if($total_len > 0){
+			$ratio=$cur_len/$total_len;
+		}else{
+			$ratio=0;
+		}
+		
+		if(exists $bar_freq{$i}){
+			$bar_freq{$i}->[0]+=$ratio;
+			$bar_freq{$i}->[1]++;
+		}else{
+			$bar_freq{$i}->[0]=$ratio;
+			$bar_freq{$i}->[1]=1;
+		}
+	}
+	return;
+}
 
 
 

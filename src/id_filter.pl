@@ -5,7 +5,7 @@ die "Usage: $0 <judge sv file> <split id file> <filter out file> <sameid count>\
 
 my ($judge,$split,$out,$sth)=@ARGV;
 
-my %info;
+my @info;
 my %id1;
 my %id2;
 my %result1;
@@ -15,8 +15,8 @@ open IN,"$judge" or die $!;
 while(<IN>){
 	chomp;
 	my @t=split;
-	$info{$t[0]}=[@t];
-	if($t[9] eq "PASS"){
+	push @info,[@t];
+	if($t[10] eq "PASS"){
 		push @{$id1{$t[1]}},$t[0];
 		push @{$id1{$t[2]}},$t[0];
 	
@@ -70,19 +70,19 @@ while(<IN>){
 close IN;
 
 open OUT,">$out" or die $!;
-foreach my $i(sort {$a <=> $b} keys %info){
-	my @data=@{$info{$i}};
+foreach my $i(@info){
+	my @data=@{$i};
 	my $check=0;
 	
 	if(exists $result1{$i}){
-		if($data[9] eq "PASS"){
+		if($data[10] eq "PASS"){
 			$check=1;
 			push @data,"FAILED";
 		}else{
 			push @data,"SKIPED";
 		}
 	}else{
-		if($data[9] eq "PASS"){
+		if($data[10] eq "PASS"){
 			push @data,"PASS";
 		}else{
 			push @data,"SKIPED";
@@ -91,22 +91,22 @@ foreach my $i(sort {$a <=> $b} keys %info){
 	}
 	
 	if(exists $result2{$i}){
-		if($data[9] eq "PASS"){
+		if($data[10] eq "PASS"){
 			$check=1;
 			push @data,"FAILED";
 		}else{
 			push @data,"SKIPED";
 		}
 	}else{
-		if($data[9] eq "PASS"){
+		if($data[10] eq "PASS"){
 			push @data,"PASS";
 		}else{
 			push @data,"SKIPED";
 		}
 	}
 	
-	if($check == 1 and $data[9] eq "PASS"){
-		$data[9] = "FAILED";
+	if($check == 1 and $data[10] eq "PASS"){
+		$data[10] = "Clustered";
 	}
 	
 	print OUT join("\t",@data,"\n");

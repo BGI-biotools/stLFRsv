@@ -1,14 +1,11 @@
 use strict;
 use warnings;
-use threads;
-use Thread::Semaphore;
-use threads::shared;
 
 die "Usage: $0 <id filter out file> <spec region> <control file> <region filter out file> <flank_len>\n" unless @ARGV==5;
 
 my ($sv,$region,$con,$out,$ext_len)=@ARGV;
 
-my %black_region:shared;
+my %black_region;
 if($region ne "NULL"){
 	if(-B "$region"){
 		my $code=&getcode;
@@ -17,10 +14,10 @@ if($region ne "NULL"){
 			chomp;
 			my @t=split;
 			my @pos=($t[1]-$ext_len,$t[2]+$ext_len);
-			unless(exists $black_region{$t[0]}){
-				$black_region{$t[0]}=shared_clone([]);
-			}
-			push @{$black_region{$t[0]}},shared_clone([@pos]);
+			# unless(exists $black_region{$t[0]}){
+				# $black_region{$t[0]}=shared_clone([]);
+			# }
+			push @{$black_region{$t[0]}},[@pos];
 		}
 		close IN;
 	}else{
@@ -29,15 +26,15 @@ if($region ne "NULL"){
 			chomp;
 			my @t=split;
 			my @pos=($t[1]-$ext_len,$t[2]+$ext_len);
-			unless(exists $black_region{$t[0]}){
-				$black_region{$t[0]}=shared_clone([]);
-			}
-			push @{$black_region{$t[0]}},shared_clone([@pos]);
+			# unless(exists $black_region{$t[0]}){
+				# $black_region{$t[0]}=shared_clone([]);
+			# }
+			push @{$black_region{$t[0]}},[@pos];
 		}
 	}
 }
 
-my %control:shared;
+my %control;
 if($con ne "NULL"){
 	if(-B "$con"){
 		my $code=&getcode;
@@ -47,13 +44,13 @@ if($con ne "NULL"){
 			my @t=split;
 			# my @pos=($t[1],$t[2],$t[4],$t[5]);
 			my @pos=($t[1]-$ext_len,$t[2]+$ext_len,$t[4]-$ext_len,$t[5]+$ext_len);
-			unless(exists $control{$t[0]}){
-				$control{$t[0]}=shared_clone({});
-			}
-			unless(exists $control{$t[0]}{$t[3]}){
-				$control{$t[0]}{$t[3]}=shared_clone([]);
-			}
-			push @{$control{$t[0]}{$t[3]}},shared_clone([@pos]);
+			# unless(exists $control{$t[0]}){
+				# $control{$t[0]}=shared_clone({});
+			# }
+			# unless(exists $control{$t[0]}{$t[3]}){
+				# $control{$t[0]}{$t[3]}=shared_clone([]);
+			# }
+			push @{$control{$t[0]}{$t[3]}},[@pos];
 		}
 		close IN;
 	}else{
@@ -63,13 +60,13 @@ if($con ne "NULL"){
 			my @t=split;
 			# my @pos=($t[1],$t[2],$t[4],$t[5]);
 			my @pos=($t[1]-$ext_len,$t[2]+$ext_len,$t[4]-$ext_len,$t[5]+$ext_len);
-			unless(exists $control{$t[0]}){
-				$control{$t[0]}=shared_clone({});
-			}
-			unless(exists $control{$t[0]}{$t[3]}){
-				$control{$t[0]}{$t[3]}=shared_clone([]);
-			}
-			push @{$control{$t[0]}{$t[3]}},shared_clone([@pos]);
+			# unless(exists $control{$t[0]}){
+				# $control{$t[0]}=shared_clone({});
+			# }
+			# unless(exists $control{$t[0]}{$t[3]}){
+				# $control{$t[0]}{$t[3]}=shared_clone([]);
+			# }
+			push @{$control{$t[0]}{$t[3]}},[@pos];
 		}
 		close IN;
 	}
@@ -94,8 +91,8 @@ while(<IN>){
 		$Cresult="NULL";
 	}
 	
-	$sv[9].="|BAD_REGION" if $Bresult=~ /FAILED/;
-	$sv[9].="|COMMON" if $Cresult=~ /FAILED/;
+	$sv[10].="|BAD_REGION" if $Bresult=~ /FAILED/;
+	$sv[10].="|COMMON" if $Cresult=~ /FAILED/;
 	
 	
 	splice(@sv,-2,0,$Bresult,$Cresult);

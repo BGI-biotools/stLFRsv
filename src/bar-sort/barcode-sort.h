@@ -72,13 +72,14 @@ struct seg_arg
 	bam_hdr_t * header;
 	read_pair * l_mem;
 	vector<one_index> * p_index;
-	vector<uint64_t> * r_index;
+	vector<uint32_t> * r_index;
+	vector<uint32_t> * s_index;
 	string outdir;
 };
 
 void* split_process(void* arg);
 void* seg_process(void* arg);
-void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t seg_th, uint32_t gap_th, uint64_t &seg_read, vector<uint64_t> * &r_index);
+void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t bar_th, uint32_t seg_th, uint32_t gap_th, uint64_t &seg_read, vector<uint32_t> * &r_index, vector<uint32_t> * &s_index);
 bool comp_chrom(const chr &a,const chr &b);
 bool comp_read(const read_pair &a,const read_pair &b);
 uint64_t covertbar(vector<string> & tempbar);

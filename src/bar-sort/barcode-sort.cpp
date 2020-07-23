@@ -187,8 +187,10 @@ int main(int argc,char* argv[]){
 	vector<seg_arg> arg_seg(thread);
 	vector<vector<one_index> > seg_index;
 	seg_index.resize(thread);
-	vector<vector<uint64_t> > read_distance;
+	vector<vector<uint32_t> > read_distance;
+	vector<vector<uint32_t> > segment_length;
 	read_distance.resize(thread);
+	segment_length.resize(thread);
 	vector<uint64_t> index_count(thread);
 	for(int32_t i=0;i<thread;i++){
 		sem_wait(&block_sem);
@@ -216,6 +218,7 @@ int main(int argc,char* argv[]){
 		arg_seg.at(i).outdir=dir;
 		arg_seg.at(i).p_index=&(seg_index.at(i));
 		arg_seg.at(i).r_index=&(read_distance.at(i));
+		arg_seg.at(i).s_index=&(segment_length.at(i));
 		arg_seg.at(i).bar_th=bar_th;
 		arg_seg.at(i).seg_th=seg_th;
 		arg_seg.at(i).gap_th=gap_th;
@@ -292,6 +295,7 @@ int main(int argc,char* argv[]){
 	cout<<"Output statistical info..."<<endl;
 	string statfile=dir + "/" + prefix+".stat";
 	string gapfile=dir + "/" + prefix+".gap";
+	string segfile=dir + "/" + prefix+".seg";
 	
 	ofstream stat(statfile.c_str(),ios::out);
 	stat << total_valid_read <<"\t" << total_seg_read << "\t" << total_seg_bar <<endl;
@@ -304,6 +308,14 @@ int main(int argc,char* argv[]){
 		}
 	}
 	gap.close();
+	
+	ofstream seg(segfile.c_str(),ios::out);
+	for(int32_t i=0;i<thread;i++){
+		for(uint64_t j=0;j < segment_length.at(i).size();j++){
+			seg<<segment_length.at(i).at(j)<<endl;
+		}
+	}
+	seg.close();
 	
 	cout<<"Output statistical info...Done"<<endl;
 	m_end=time(NULL);
@@ -427,7 +439,8 @@ void* seg_process(void* arg)
 	uint32_t prefix=sin_arg->th_index;
 	read_pair * p=sin_arg->l_mem;
 	vector<one_index> * p_index=sin_arg->p_index;
-	vector<uint64_t> * r_index=sin_arg->r_index;
+	vector<uint32_t> * r_index=sin_arg->r_index;
+	vector<uint32_t> * s_index=sin_arg->s_index;
 	uint64_t count=sin_arg->count;
 	string dir=sin_arg->outdir;
 	uint32_t bar_th=sin_arg->bar_th;
@@ -448,9 +461,9 @@ void* seg_process(void* arg)
 	for(uint64_t i=0;i<count;i++){
 		read_pair one=p[i];
 		if(one.bar != last_bar){
-			if(bar.size() >= bar_th){
+			if(bar.size() > 0){
 				vector<seg> segment;
-				onebar_process(bar,segment,seg_th,gap_th,seg_read,r_index);
+				onebar_process(bar,segment,bar_th,seg_th,gap_th,seg_read,r_index,s_index);
 				if(segment.size() > 0){
 					seg_bar++;
 					//check the bar,update the index
@@ -481,9 +494,9 @@ void* seg_process(void* arg)
 		bar.push_back(one);	
 	}
 	
-	if(bar.size() >= bar_th){
+	if(bar.size() > 0){
 		vector<seg> segment;
-		onebar_process(bar,segment,seg_th,gap_th,seg_read,r_index);
+		onebar_process(bar,segment,bar_th,seg_th,gap_th,seg_read,r_index,s_index);
 		if(segment.size() > 0){
 			seg_bar++;
 			//check the bar,update the index
@@ -518,7 +531,7 @@ void* seg_process(void* arg)
 	return NULL;
 }
 
-void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t seg_th, uint32_t gap_th, uint64_t &seg_read, vector<uint64_t> * &r_index)
+void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t bar_th, uint32_t seg_th, uint32_t gap_th, uint64_t &seg_read, vector<uint32_t> * &r_index, vector<uint32_t> * &s_index)
 {
 	uint64_t barcode=bar.at(0).bar;
 	vector<read_pair> one_seg;
@@ -527,28 +540,12 @@ void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t seg_t
 	uint32_t seg_count=0;
 	seg one_segment;
 	for(uint32_t i=0; i< bar.size();i++){
+		
 		if((int64_t) bar.at(i).index_name != last_name){
-			if(one_seg.size() >= seg_th){
-				seg_read+=one_seg.size();
-				one_segment.bar=barcode;
-				one_segment.seg_index=seg_count;
-				one_segment.index_name=one_seg.front().index_name;
-				one_segment.s_pos=one_seg.front().mid_pos;
-				one_segment.e_pos=one_seg.back().mid_pos;
-				one_segment.sup_count=one_seg.size();
-				segment.push_back(one_segment);
-				seg_count++;
-			}
-			one_seg.clear();
-			
-			one_seg.push_back(bar.at(i));
-			last_name=bar.at(i).index_name;
-			last_pos=bar.at(i).mid_pos;
-		}else{
-			uint64_t dis=bar.at(i).mid_pos - last_pos;
-			r_index->push_back(dis);
-			if(dis >= gap_th){
-				if(one_seg.size() >= seg_th){
+			if(one_seg.size() > 0){
+				uint32_t cur_len=one_seg.back().mid_pos-one_seg.front().mid_pos;
+				s_index->push_back(cur_len);
+				if(one_seg.size() >= seg_th && bar.size() >= bar_th){
 					seg_read+=one_seg.size();
 					one_segment.bar=barcode;
 					one_segment.seg_index=seg_count;
@@ -561,22 +558,52 @@ void onebar_process(vector<read_pair> &bar, vector<seg> &segment, uint32_t seg_t
 				}
 				one_seg.clear();
 			}
+			one_seg.push_back(bar.at(i));
+			last_name=bar.at(i).index_name;
+			last_pos=bar.at(i).mid_pos;
+		}else{
+			uint32_t dis=bar.at(i).mid_pos - last_pos;
+			r_index->push_back(dis);
+			if(dis >= gap_th){
+				if(one_seg.size() > 0){
+					uint32_t cur_len=one_seg.back().mid_pos-one_seg.front().mid_pos;
+					s_index->push_back(cur_len);
+					if(one_seg.size() >= seg_th && bar.size() >= bar_th){
+						seg_read+=one_seg.size();
+						one_segment.bar=barcode;
+						one_segment.seg_index=seg_count;
+						one_segment.index_name=one_seg.front().index_name;
+						one_segment.s_pos=one_seg.front().mid_pos;
+						one_segment.e_pos=one_seg.back().mid_pos;
+						one_segment.sup_count=one_seg.size();
+						segment.push_back(one_segment);
+						seg_count++;
+					}
+					one_seg.clear();
+				}
+			}
 			last_pos=bar.at(i).mid_pos;
 			one_seg.push_back(bar.at(i));	
 		}
 	}
 	
-	if(one_seg.size() >= seg_th){
-		seg_read+=one_seg.size();
-		one_segment.bar=barcode;
-		one_segment.seg_index=seg_count;
-		one_segment.index_name=one_seg.front().index_name;
-		one_segment.s_pos=one_seg.front().mid_pos;
-		one_segment.e_pos=one_seg.back().mid_pos;
-		one_segment.sup_count=one_seg.size();
-		segment.push_back(one_segment);
-		seg_count++;
+	if(one_seg.size() > 0){
+		uint32_t cur_len=one_seg.back().mid_pos-one_seg.front().mid_pos;
+		s_index->push_back(cur_len);
+		if(one_seg.size() >= seg_th && bar.size() >= bar_th){
+			seg_read+=one_seg.size();
+			one_segment.bar=barcode;
+			one_segment.seg_index=seg_count;
+			one_segment.index_name=one_seg.front().index_name;
+			one_segment.s_pos=one_seg.front().mid_pos;
+			one_segment.e_pos=one_seg.back().mid_pos;
+			one_segment.sup_count=one_seg.size();
+			segment.push_back(one_segment);
+			seg_count++;
+		}
 	}
+	
+	s_index->push_back(0xFFFFFFFF);
 	return;
 }
 

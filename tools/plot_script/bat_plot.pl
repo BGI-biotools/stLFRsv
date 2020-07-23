@@ -23,7 +23,7 @@ while(<IN>){
 	chomp;
 	my @t=split;
 	if($pass){
-		next unless $t[11] eq "PASS";
+		next unless $t[12] eq "PASS";
 	}
 	
 	my ($chr1,$pos1,$chr2,$pos2)=@t[4..7];

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-die "Usage: $0 <filter out file> <split id file> <link chain file> <merge size> <merge limit>\n" unless @ARGV==5;
+die "Usage: $0 <region mark file> <split id file> <link chain file> <merge size> <merge limit>\n" unless @ARGV==5;
 
 my ($filter,$split,$out,$mergesize,$mergemax)=@ARGV;
 
@@ -46,7 +46,7 @@ while(<IN>){
 	push @{$pos{$t[3]}},[($t[4],$t[0])];
 	push @{$pos{$t[5]}},[($t[6],$t[0])];
 	
-	next unless $t[9] eq "PASS";
+	next unless $t[10] eq "PASS";
 	$clusterinfo{$t[1]}{$t[0]}=1;
 	$clusterinfo{$t[2]}{$t[0]}=1;
 	$svinfo{$t[0]}=[($t[1],$t[2])];
@@ -68,19 +68,19 @@ foreach my $i(@svid){
 	}
 }
 
-
 open OUT,">$out" or die $!;
-print OUT "EventID\tSvID\tBreakID1\tBreakID2\tChrA\tPosA\tChrB\tPosB\tShareBarcode\tRealType\tSimpleType\tComprehensiveFilter\tHeatmap\tPhase\tMapQ\tBlackList\tControlList\tSegmentCheck1\tSegmentCheck2\tSVchain\n";
+print OUT "EventID\tSvID\tBreakID1\tBreakID2\tChrA\tPosA\tChrB\tPosB\tShareBarcode\tRealType\tSimpleType\tQualityScore\tComprehensiveFilter\tHeatmapFilter\tPhaseFilter\tMapQFilter\tPairEndFilter\tLocalizationFilter\tBlackList\tControlList\tSegmentCheck1\tSegmentCheck2\tSVchain\n";
 while(scalar(keys %checkid) > 0){
-	my @tmp= sort{$a <=> $b} (keys %checkid);
+	my @tmp= sort chrtopos (keys %checkid);
 	my $case=shift @tmp;
 	my @merge;
 	&mergeSV($case,\@merge);
-	@merge=sort{$a <=> $b} @merge;
+	@merge=sort chrtopos @merge;
 	
 	$sid++;
 	foreach my $id (@merge){
 		delete $checkid{$id};
+		
 		my @data=@{$info{$id}};
 		splice(@data,7,0,$sup{$data[1]}{$data[2]});
 		unshift @data,"S$sid";
@@ -98,12 +98,20 @@ while(scalar(keys %checkid) > 0){
 		}else{
 			push @data,$oneline;
 		}
+		
+		if($data[16]=~ /PASS/){
+			$data[16]=~ /:(\d+)-(\d+)/;
+			$data[5]=$1;
+			$data[7]=$2;
+		}
+		
 		unless(@merge > $mergemax){
 			print OUT join("\t",@data),"\n";
 		}
 	}
 }
 close OUT;
+
 
 %info=();
 %pos=();
@@ -124,7 +132,7 @@ while(<IN>){
 	push @{$pos{$t[3]}},[($t[4],$t[0])];
 	push @{$pos{$t[5]}},[($t[6],$t[0])];
 	
-	next unless $t[9]=~ /PASS/;
+	next unless $t[10]=~ /PASS/;
 	# next if $t[9]=~ /BAD_REGION/;
 	$clusterinfo{$t[1]}{$t[0]}=1;
 	$clusterinfo{$t[2]}{$t[0]}=1;
@@ -149,13 +157,13 @@ foreach my $i(@svid){
 
 
 open OUT,">$out.NoRegionFilter" or die $!;
-print OUT "EventID\tSvID\tBreakID1\tBreakID2\tChrA\tPosA\tChrB\tPosB\tShareBarcode\tRealType\tSimpleType\tComprehensiveFilter\tHeatmap\tPhase\tMapQ\tBlackList\tControlList\tSegmentCheck1\tSegmentCheck2\tSVchain\n";
+print OUT "EventID\tSvID\tBreakID1\tBreakID2\tChrA\tPosA\tChrB\tPosB\tShareBarcode\tRealType\tSimpleType\tQualityScore\tComprehensiveFilter\tHeatmapFilter\tPhaseFilter\tMapQFilter\tPairEndFilter\tLocalizationFilter\tBlackList\tControlList\tSegmentCheck1\tSegmentCheck2\tSVchain\n";
 while(scalar(keys %checkid) > 0){
-	my @tmp= sort{$a <=> $b} (keys %checkid);
+	my @tmp= sort chrtopos (keys %checkid);
 	my $case=shift @tmp;
 	my @merge;
 	&mergeSV($case,\@merge);
-	@merge=sort{$a <=> $b} @merge;
+	@merge=sort chrtopos @merge;
 	
 	$sid++;
 	foreach my $id (@merge){
@@ -177,6 +185,13 @@ while(scalar(keys %checkid) > 0){
 		}else{
 			push @data,$oneline;
 		}
+		
+		if($data[16]=~ /PASS/){
+			$data[16]=~ /:(\d+)-(\d+)/;
+			$data[5]=$1;
+			$data[7]=$2;
+		}
+		
 		unless(@merge > $mergemax){
 			print OUT join("\t",@data),"\n";
 		}
@@ -184,41 +199,11 @@ while(scalar(keys %checkid) > 0){
 }
 close OUT;
 
-
-
-
 sub mergeSV{
 	my $id=$_[0];
 	my $ref=$_[1];
 	my %all;
 	$all{$id}=1;
-	# my %out;
-	# while(scalar(keys %all) > scalar(keys %out)){
-		# foreach my $cid (keys %all){
-			# next if exists $out{$cid};
-			# my @data=@{$info{$cid}};
-			# my ($chr1,$pos1)=($data[3],$data[4]);
-			# my ($chr2,$pos2)=($data[5],$data[6]);
-			# foreach my $ref (@{$pos{$chr1}}){
-				# my ($ppos,$pid)=@{$ref};
-				# if(abs($ppos-$pos1) <= $mergesize){
-					# next if exists $all{$pid};
-					# next if $pid == $cid;
-					# $all{$pid}=1;
-				# }
-			# }
-			
-			# foreach my $ref (@{$pos{$chr2}}){
-				# my ($ppos,$pid)=@{$ref};
-				# if(abs($ppos-$pos2) <= $mergesize){
-					# next if exists $all{$pid};
-					# next if $pid == $cid;
-					# $all{$pid}=1;
-				# }
-			# }	
-			# $out{$cid}=1;
-		# }
-	# }
 	
 	my @data=@{$info{$id}};
 	my ($chr1,$pos1)=($data[3],$data[4]);
@@ -406,4 +391,46 @@ sub searchchain{
 	return;
 }
 
-
+sub chrtopos{
+	my @ta=@{$info{$a}};
+	my @tb=@{$info{$b}};
+	my $nchra1=$ta[3];
+	my $nchra2=$ta[5];
+	$nchra1=~ s/chr//;
+	$nchra2=~ s/chr//;
+	$nchra1 =23 if $nchra1 eq "X";
+	$nchra1 =24 if $nchra1 eq "Y";
+	$nchra1 =25 if $nchra1 eq "M";
+	$nchra2 =23 if $nchra2 eq "X";
+	$nchra2 =24 if $nchra2 eq "Y";
+	$nchra2 =25 if $nchra2 eq "M";
+	my $posa1=$ta[4];
+	my $posa2=$ta[6];
+	
+	my $nchrb1=$tb[3];
+	my $nchrb2=$tb[5];
+	$nchrb1=~ s/chr//;
+	$nchrb2=~ s/chr//;
+	$nchrb1 =23 if $nchrb1 eq "X";
+	$nchrb1 =24 if $nchrb1 eq "Y";
+	$nchrb1 =25 if $nchrb1 eq "M";
+	$nchrb2 =23 if $nchrb2 eq "X";
+	$nchrb2 =24 if $nchrb2 eq "Y";
+	$nchrb2 =25 if $nchrb2 eq "M";
+	my $posb1=$tb[4];
+	my $posb2=$tb[6];
+	
+	if($nchra1=~ /^\d+$/ and $nchrb1=~ /^\d+$/ ){
+		if($nchra2=~ /^\d+$/ and $nchrb2=~ /^\d+$/ ){
+			$nchra1 <=> $nchrb1 or $posa1 <=> $posb1 or $nchra2 <=> $nchrb2 or $posa2 <=> $posb2;
+		}else{
+			$nchra1 <=> $nchrb1 or $posa1 <=> $posb1 or $nchra2 cmp $nchrb2 or $posa2 <=> $posb2;
+		}
+	}else{
+		if($nchra2=~ /^\d+$/ and $nchrb2=~ /^\d+$/ ){
+			$nchra1 cmp $nchrb1 or $posa1 <=> $posb1 or $nchra2 <=> $nchrb2 or $posa2 <=> $posb2;
+		}else{
+			$nchra1 cmp $nchrb1 or $posa1 <=> $posb1 or $nchra2 cmp $nchrb2 or $posa2 <=> $posb2;
+		}
+	}
+}
