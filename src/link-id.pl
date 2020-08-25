@@ -3,28 +3,34 @@ use warnings;
 use Statistics::R;
 use List::Util;
 
-die "Usage: $0 <cluster file> <link id file> <low depth> <exclude depth> <low depth share> <exclude depth share> <gap size> <detect size> <bin size> <N merge bins>\n" if @ARGV != 10;
+die "Usage: $0 <cluster file> <link id file> <filter seg file> <low depth count> <avg depth> <single end P_th> <gap size> <seg size> <detect size> <bin size> <N merge bins> <N breaks>\n" if @ARGV != 12;
 
-my ($infile,$outfile,$low,$ex,$lows,$exs,$gap,$size,$bin,$Nmerge)=@ARGV;
+my ($infile,$outfile,$freqfile,$low,$avg,$p_th,$gap,$seg_size,$size,$bin,$Nmerge,$Nbreak)=@ARGV;
 
-my $stat=0;
-if($lows <= 0){
-	die "Wrong parameter for low depth share filter!\n";
-}elsif($lows < 1){
-	$stat=1;
+my %seg_freq;
+my $max_len=0;
+if(1){
+	open IN,"$freqfile" or die $!;
+	while(<IN>){
+		chomp;
+		my @t=split;
+		$seg_freq{$t[0]}=$t[1];
+		if($t[0] > $max_len){
+			$max_len=$t[0];
+		}
+	}
+	close IN;
 }
 
 if(1){
 	my $total_len=0;
 	my %barhash;
 	my @cluarray;
-	my @infoarray;
 	open IN,"$infile.raw" or die $!;
 	while(<IN>){
 		chomp;
 		$total_len++;
-		my ($gid,$chr,$pos,$line)=(split)[0,2,3,6];
-		push @infoarray,($chr,$pos);
+		my ($gid,$line)=(split)[0,6];
 		foreach my $sinbar(split(/,/,$line)){
 			$sinbar=~ /^(\d+)-/;
 			my $bar=$1;
@@ -35,18 +41,11 @@ if(1){
 	close IN;
 	
 	open OUT,">$infile.share" or die $!;
-	open OUTI,">$infile.share.dat" or die $!;
 	for(my $i=0;$i<$total_len;$i++){
-		my (%tmphash,$chr1,$pos1,$chr2,$pos2,$dis);
-		($chr1,$pos1)=@infoarray[2*$i,2*$i+1];
+		my %tmphash;
 		foreach my $bar ( @{$cluarray[$i]} ){
 			foreach my $j(@{$barhash{$bar}}){
 				next unless $i < $j;
-				($chr2,$pos2)=@infoarray[2*$j,2*$j+1];
-				if($chr1 eq $chr2){
-					$dis=abs($pos1-$pos2);
-					next if $dis < $gap;
-				}
 				$tmphash{$j}{$bar}++;
 			}
 		}
@@ -56,85 +55,39 @@ if(1){
 				my $count=keys %{$tmphash{$j}};
 				my $sline=join(",",(keys %{$tmphash{$j}}));
 				print OUT "$i\t$j\t$count\t$sline\n";
-				print OUTI "$count\n";
 			}
 		}	
 	}
 	close OUT;
-	close OUTI;	
 }
 
-
-
-if($stat){
-	my $R = Statistics::R->new();
-	my $cmd=qq{
-library(MASS)
-a = read.table("$infile.share.dat")
-x<-a[,1]
-subx<-x[which(x>(quantile(x,$exs)))]
-res=fitdistr(subx, "lognormal")
-th1<-qlnorm($lows,res[[1]][1],res[[1]][2],lower.tail = TRUE)
-th2<-quantile(x,$lows)
-};
-
-	$R->run($cmd);
-	my $low1=$R->get('th1');
-	my $low2=$R->get('th2');
-	$R->stop();
-	print STDERR "For both ends at $lows confidence:\n";
-	print STDERR "threshold1 is set to $low1\n";
-	print STDERR"threshold2 is set to $low2\n";
-	print STDERR "final threshold is set to ".int(($low1+$low2)/2 + 0.5)."\n";
-	if(abs($low1-$low2) >= ($low1< $low2 ? $low1:$low2)/2){
-		print STDERR "Warning: too large diff between threshold1 and threshold2, the result may be unreliable!!!\n";
-	}
-	$lows=int(($low1+$low2)/2 + 0.5);
+my ($del_size,$other_size);
+if($size >=$gap){
+	$del_size=$size;
+}else{
+	$del_size=$gap;
 }
 
-$stat=0;
-if($low <= 0){
-	die "Wrong parameter for low depth single filter!\n";
-}elsif($low < 1){
-	$stat=1;
+if($del_size < $bin * 5){
+	$del_size= $bin * 5;
 }
 
-if($stat){
-	open IN,"$infile.raw" or die $!;
-	open OUT,">$infile.single.dat" or die $!;
-	while(<IN>){
-		chomp;
-		my @t=split;
-		print OUT "$t[5]\n";
-	}
-	close IN;
-	close OUT;
-	
-	my $R = Statistics::R->new();
-	my $cmd=qq{
-library(MASS)
-a = read.table("$infile.single.dat")
-x<-a[,1]
-subx<-x[which(x>(quantile(x,$ex)))]
-res=fitdistr(subx, "lognormal")
-th1<-qlnorm($low,res[[1]][1],res[[1]][2],lower.tail = TRUE)
-th2<-quantile(x,$low)
-};
-	$R->run($cmd);
-	my $low1=$R->get('th1');
-	my $low2=$R->get('th2');
-	$R->stop();
-	print STDERR "For single end at $low confidence:\n";
-	print STDERR "threshold1 is set to $low1\n";
-	print STDERR "threshold2 is set to $low2\n";
-	print STDERR "final threshold is set to ".int(($low1+$low2)/2 + 0.5)."\n";
-	if(abs($low1-$low2) >= ($low1< $low2 ? $low1:$low2)/2){
-		print STDERR "Warning: too large diff between threshold1 and threshold2, the result may be unreliable!!!\n";
-	}
-	$low=int(($low1+$low2)/2 + 0.5);
+$del_size=int($del_size/$bin+0.5)*$bin;
+
+if($size >= $seg_size){
+	$other_size=$size;
+}else{
+	$other_size=$seg_size;
 }
+$seg_size=int($seg_size/$bin+0.5)*$bin;
+
+print STDERR "Considering the Library statistics and SIZE parameter\n";
+print STDERR "for SVs on the same chromosome:\n";
+print STDERR "detect size for DELs: $del_size\n";
+print STDERR "detect size for DUPs or INVs: $other_size\n";
 
 my @sv;
+my $R = Statistics::R->new();
 if(1){
 	my @infoarray;
 	open IN,"$infile.raw" or die $!;
@@ -147,32 +100,103 @@ if(1){
 	
 	my @sharearray;
 	my %existhash;
+	my %counthash;
 	open IN,"$infile.share" or die $!;
 	while(<IN>){
 		chomp;
-		my ($i,$j,$count,$line)=split;
-		$sharearray[$i]{$j}=[($count,$line)];
+		my ($i,$j,$count)=split;
+		$sharearray[$i]{$j}=$count;
 	}
 	close IN;
 	
 	foreach (my $i=0;$i<=$#sharearray;$i++){
-		foreach my $j(sort {$a <=> $b} keys %{$sharearray[$i]}){
-			next unless $sharearray[$i]{$j}->[0] >= $lows;
-			next unless ($infoarray[4*$i+3] >= $low and $infoarray[4*$j+3] >= $low);
+		foreach my $j(sort {$a <=> $b} keys %{$sharearray[$i]}){	
 			next if exists $existhash{$i}{$j};
 			my $chra=$infoarray[4*$i+0];
 			my $chrb=$infoarray[4*$j+0];
 			my $posa=$infoarray[4*$i+1];
 			my $posb=$infoarray[4*$j+1];
+			my $oria=$infoarray[4*$i+2];
+			my $orib=$infoarray[4*$j+2];
+			my $supa=$infoarray[4*$i+3];
+			my $supb=$infoarray[4*$j+3];
 			if($chra eq $chrb){
-				next unless abs($posa-$posb) >=$size;
+				my $type;
+				if($posa < $posb){
+					$type=$oria.$orib;
+				}else{
+					$type=$orib.$oria;
+				}
+				
+				if($type eq "RL"){
+					next unless abs($posa-$posb) >=$del_size;
+				}else{
+					next unless abs($posa-$posb) >=$other_size;
+				}	
 			}
+			
+			#1
+			next unless $sharearray[$i]{$j}>= $low;
+			next if $supa < int($avg+($avg**0.5)*3);
+			next if $supa > $avg*10;
+			next if $supb < int($avg+($avg**0.5)*3);
+			next if $supb > $avg*10;
+			#2
+			my $judge_len;
+			if($chra eq $chrb){
+				$judge_len=abs($posa-$posb);
+				$judge_len= $max_len if $judge_len > $max_len;
+			}else{
+				$judge_len=$max_len;
+			}
+			my $judge_dep= ($supa < $supb) ? $supa : $supb;
+			# print "$i\t$j\t",$sharearray[$i]{$j},"\t",$judge_dep * $seg_freq{$judge_len},"\n";
+			next unless $sharearray[$i]{$j} >= int($judge_dep * $seg_freq{$judge_len} + 0.5);
+			# print "$i\t$j\n";
+			#3			
+			my $check1=&S_endcheck($i,\@infoarray);
+			my $check2=&S_endcheck($j,\@infoarray);
+			next unless ($check1 > 0 and $check2 > 0);
+			
 			my @result;
-			&searchBest($i,$j,\@infoarray,\@sharearray,\%existhash,\@result);
+			&searchBest($i,$j,\@infoarray,\@sharearray,\%existhash,\%counthash,\@result);
 			push @sv,[@result];
 		}
 	}
 	
+	my %raw_bar;
+	open IN,"$infile.share" or die $!;
+	while(<IN>){
+		chomp;
+		my ($i,$j,$count,$line)=split;
+		if(exists $existhash{$i}{$j}){
+			$raw_bar{"$i-$j"}=$line;
+		}
+	}
+	close IN;
+	
+	foreach my $ref(@sv){
+		my %temp_bar;
+		foreach my $k(split(/,/,$ref->[7])){
+			my $line=$raw_bar{$k};
+			foreach my $b(split(/,/,$line)){
+				$temp_bar{$b}=1;
+			}
+		}
+		
+		my @combine_bar=keys %temp_bar;
+		my $count=@combine_bar;
+		$ref->[6]=$count;
+		$ref->[8]=join(",",@combine_bar);
+		
+		if(exists $counthash{$ref->[2]}{$ref->[0]}{$ref->[1]}){
+			$ref->[9] ="Lowqual" if ($counthash{$ref->[2]}{$ref->[0]}{$ref->[1]} > $Nbreak);
+		}
+		
+		if(exists $counthash{$ref->[5]}{$ref->[3]}{$ref->[4]}){
+			$ref->[9] ="Lowqual" if ($counthash{$ref->[5]}{$ref->[3]}{$ref->[4]} > $Nbreak);
+		}
+	}
 }
 
 my @new_sin;
@@ -183,7 +207,7 @@ if(1){
 	foreach my $ref(@sv){
 		my @result=@{$ref};
 		my $jcount=0;
-		#chra posa oria chrb posb orib count id bar
+		#chra posa oria chrb posb orib count id bar qual
 		my (@id1,@id2);
 		foreach my $k(split(/,/,$result[7])){
 			$jcount++;
@@ -254,47 +278,13 @@ if(1){
 		print OUT "$i\t$chr\t$pos\t$ori\t$count\t$scount\t$line\n";
 	}
 	close OUT;
-}
-
-if(1){
-	my @infoarray;
-	# my @countarray;
-	open IN,"$infile" or die $!;
-	while(<IN>){
-		chomp;
-		my @t=split;
-		$infoarray[$t[0]]=[($t[4],$t[5])];
-	}
-	close IN;
-	
-	# open IN,"$infile.raw" or die $!;
-	# while(<IN>){
-		# chomp;
-		# my @t=split;
-		# $countarray[$t[0]]=$t[5];
-	# }
-	# close IN;
 	
 	open OUT,">$outfile" or die $!;
 	open OUTA,">$outfile.all" or die $!;
-	
+	#ida idb chra posa oria chrb posb orib count id bar qual jcount
 	@sv=sort {
 		$a->[0] <=>	 $b->[0] or $a->[1] <=> $b->[1];
 	}@sv;
-	
-	#ida idb chra posa oria chrb posb orib count id bar jcount
-	# my $R = Statistics::R->new();
-	# my $cmd=qq{
-# library(MASS)
-# a = read.table("$gapfile")
-# x<-a[,1]
-# x<-x[which(x>$rlen)]
-# x<-x[which(x<$mlen)]
-# subx<-x[which(x>(quantile(x,$exs)))]
-# res=fitdistr(subx, "lognormal")
-# Ngap=length(x);
-# };
-	# $R->run($cmd);
 	my @out;
 	my $last=-1;
 	foreach my $ref (@sv){
@@ -307,61 +297,8 @@ if(1){
 			$last=$ref->[0];
 		}
 		
-		my $sup1=$infoarray[$ref->[0]][0];
-		my $sup2=$infoarray[$ref->[1]][0];
-		my $m1=$infoarray[$ref->[0]][1];
-		my $m2=$infoarray[$ref->[1]][1];
-		my $sup3=$ref->[8];
-		my $m3=$ref->[11];
-		
-		my @q;
-		# my (@id1,@id2);
-		# my $c1=0;
-		# my $c2=0;
-		# foreach my $k(split(/,/,$ref->[9])){
-			# my ($i,$j)=split(/-/,$k);
-			# push @id1,$i;
-			# push @id2,$j;
-		# }
-		
-		# foreach my $i(@id1){
-			# if($countarray[$i] >= $low){
-				# $c1=1;
-			# }
-		# }
-		
-		# foreach my $i(@id2){
-			# if($countarray[$i] >= $low){
-				# $c2=1;
-			# }
-		# }
-		# unless ($c1 and $c2){
-			# push @q,"LowQual1";
-		# }
-		
-		my $mergelow1=int(0.8*$m1*$low);
-		my $mergelow2=int(0.8*$m2*$low);
-		# if($sup1 <= $mergelow1 or $sup2 <= $mergelow2 or $m1 > $Nmerge*2*0.8 or $m2 > $Nmerge*2*0.8){
-		if($sup1 <= $mergelow1 or $sup2 <= $mergelow2){
-			push @q,"LowQual1";
-		}
-		
-		my $mergelows=(int($m3*0.35*$lows) > $lows ? int($m3*0.35*$lows):$lows);
-		if($sup3 <= $mergelows or $m3 > ((2*$Nmerge)**2) * 0.4){
-			push @q,"LowQual2";
-		}
-		
-		my $qual;
-		if(@q>0){
-			$qual=join(",",@q);
-		}else{
-			$qual="PASS";
-		}
-		
-		
-		print OUTA join("\t",@{$ref}[0,1],$qual,@{$ref}[2..11]),"\n";
-		
-		if($qual eq "PASS"){
+		print OUTA join("\t",@{$ref}[0,1],$ref->[11],@{$ref}[2..10],$ref->[12]),"\n";
+		if($ref->[11] eq "PASS"){
 			push @out,$ref->[1].":".$ref->[8];
 		}
 	}
@@ -376,110 +313,108 @@ if(1){
 }
 
 sub searchBest{
-	my ($i,$j,$info,$share,$exist,$ref)=@_;
+	my ($i,$j,$info,$share,$exist,$count,$ref)=@_;
 	
 	my $last="";
+	my $best;
 	my %temp;
-	my $checkid;
-	$temp{"$i-$j"}=$share->[$i]->{$j}->[0];
-	while(1){
-		my @id=sort {$temp{$b} <=> $temp{$a} or $a cmp $b} keys %temp;
-		my $name=join("-",@id);
-		if ($last eq $name){
-			$checkid=$id[0];
+	my $oria=$info->[4*$i+2];
+	my $orib=$info->[4*$j+2];
+	my $chra=$info->[4*$i+0];
+	my $chrb=$info->[4*$j+0];
+	my $type=$oria.$orib;
+	my @checkid=($i,$j);
+	$best=&singlelowBest($info,$share,$exist,\%temp,$i,$j);
+	
+	while((keys %temp) > 0){
+		my %cin;
+		foreach my $id(keys %temp){
+			my ($x,$y)=split(/-/,$id);
+			my %cur;
+			my $cur_t=&singlelowBest($info,$share,$exist,\%cur,$x,$y);
+			unless ($cur_t >= $best){
+				delete $temp{$id};
+			}else{
+				$cin{$id}{"total"}=$cur_t;
+				%{$cin{$id}{"sub"}}=%cur;
+			}
+		}
+		
+		if((keys %temp) == 0){
 			last;
 		}
-		$last=$name;
-		my $k=$id[0];
-		my ($x,$y)=split(/-/,$k);
-		%temp=();
-		$temp{"$x-$y"}=$share->[$x]->{$y}->[0];
-		&singleBest($info,$share,$exist,\%temp,$x,$y);
+		
+		my %level2;
+		foreach my $id(keys %temp){
+			if(($temp{$id} > $share->[$checkid[0]]->{$checkid[1]}) or $cin{$id}{"total"} > $best ){
+				$level2{$id}=1;
+			}
+		}
+		
+		my $final_id;
+		if( (keys %level2) == 1){
+			$final_id=(keys %level2)[0];
+		}elsif((keys %level2) > 1){
+			my @ids=(keys %level2);
+			$final_id=&get_best(\@ids,\%temp,\%cin,$type);
+		}else{
+			my $cid="$checkid[0]-$checkid[1]";
+			$temp{$cid}=$share->[$checkid[0]]->{$checkid[1]};
+			$cin{$cid}{"total"}=$best;
+			my @ids=(keys %temp);
+			$final_id=&get_best(\@ids,\%temp,\%cin,$type);
+			last if ($final_id eq $cid);
+		}
+		
+		@checkid=split(/-/,$final_id);
+		$best=$cin{$final_id}{"total"};
+		%temp=%{$cin{$final_id}{"sub"}};
 	}
 	
-	($i,$j)=split(/-/,$checkid);
 	%temp=();
-	$temp{"$i-$j"}=$share->[$i]->{$j}->[0];
-	&singlelowBest($info,$share,$exist,\%temp,$i,$j);
-	
-	
-	my ($oria,$orib);
-	my ($chra,$chrb);
-	my (@posa,@posb);
-	my (@id,%bar);
-	my $num;
-	# my $max=-1;
-	foreach my $key (sort {$temp{$b} <=> $temp{$a} or $a cmp $b} keys %temp){
+	&singleBest($info,$share,$exist,\%temp,$checkid[0],$checkid[1]);
+	my $posa=$info->[4*$checkid[0]+1];
+	my $posb=$info->[4*$checkid[1]+1];
+	my @id;
+	foreach my $key (sort {$temp{$b} <=> $temp{$a}}keys %temp){
 		my ($x,$y)=split(/-/,$key);
-		my ($chr1,$pos1,$ori1)=@{$info}[4*$x,4*$x+1,4*$x+2];
-		my ($chr2,$pos2,$ori2)=@{$info}[4*$y,4*$y+1,4*$y+2];
-		unless(defined $oria){
-			$oria=$ori1;
-		}
-		
-		unless(defined $orib){
-			$orib=$ori2;
-		}
-		
-		unless(defined $chra){
-			$chra=$chr1;
-		}
-		
-		unless(defined $chrb){
-			$chrb=$chr2;
-		}
-		
-		if($temp{$key} >= $lows){
-			push @posa,$pos1;
-			push @posb,$pos2;
-		}
-		# if($max > 0){
-			# if($max == $temp{$key}){
-				# push @posa,$pos1;
-				# push @posb,$pos2;
-			# }
-		# }else{
-			# push @posa,$pos1;
-			# push @posb,$pos2;
-			# $max=$temp{$key};
-		# }
 
 		push @id,$key;
-		foreach my $b(split(/,/,$share->[$x]->{$y}->[1])){
-			$bar{$b}=1;
-		}
 		$exist->{$x}->{$y}=1;
 	}
 	
-	@posa=sort{$a <=> $b} @posa;
-	
-	@posb=sort{$a <=> $b} @posb;
-	
 	push @{$ref},$chra;
-	if($oria eq "R"){
-		push @{$ref},$posa[-1];
-	}else{
-		push @{$ref},$posa[0];
-	}
-	
+	push @{$ref},$posa;
 	push @{$ref},$oria;
-	
 	push @{$ref},$chrb;
-	if($orib eq "R"){
-		push @{$ref},$posb[-1];
-	}else{
-		push @{$ref},$posb[0];
-	}
-	
+	push @{$ref},$posb;
 	push @{$ref},$orib;
-	
-	$num= keys %bar;
-
-	push @{$ref},$num;
-	
+	push @{$ref},$best;
 	push @{$ref},join(",",@id);
 	
-	push @{$ref},join(",",(keys %bar));
+	my $qual;
+	my $supa=$info->[4*$checkid[0]+3];
+	my $supb=$info->[4*$checkid[1]+3];
+	my $judge_len;
+	if($chra eq $chrb){
+		$judge_len=abs($posa-$posb);
+		$judge_len= $max_len if $judge_len > $max_len;
+	}else{
+		$judge_len=$max_len;
+	}
+	my $judge_dep= ($supa < $supb) ? $supa : $supb;
+	
+	my $jcount=@id;
+	if($best >= 2*$share->[$checkid[0]]->{$checkid[1]} and $share->[$checkid[0]]->{$checkid[1]} >= int($judge_dep * $seg_freq{$judge_len} + 0.5) and $jcount> int(($Nmerge**2)/2)){
+		$qual="PASS";
+	}else{
+		$qual="Lowqual";
+	}
+	$count->{$oria}->{$chra}->{$posa}++;
+	$count->{$orib}->{$chrb}->{$posb}++;
+	
+	push @{$ref},"NULL";
+	push @{$ref},$qual;
 	
 	return;
 }
@@ -606,10 +541,7 @@ sub singleBest{
 			if($x< $y){
 				if(exists $share->[$x]->{$y}){
 					next if exists $exist->{$x}->{$y};
-					next unless $info->[4*$x+3] >= $low;
-					next unless $info->[4*$y+3] >= $low;
-					next unless $share->[$x]->{$y}->[0] >= $lows;
-					$ref->{"$x-$y"}=$share->[$x]->{$y}->[0];
+					$ref->{"$x-$y"}=$share->[$x]->{$y};
 				}
 			}
 		}
@@ -623,6 +555,8 @@ sub singlelowBest{
 	my ($chr1,$pos1,$ori1,$count1)=@{$info}[4*$i,4*$i+1,4*$i+2,4*$i+3];
 	my ($chr2,$pos2,$ori2,$count2)=@{$info}[4*$j,4*$j+1,4*$j+2,4*$j+3];
 	my ($start,$end);
+	my $base=$share->[$i]->{$j};
+	my $total=0;
 	
 	if($ori1 eq "R"){
 		$start=$pos1-($Nmerge*$bin)+$bin;
@@ -740,17 +674,200 @@ sub singlelowBest{
 			if($x< $y){
 				if(exists $share->[$x]->{$y}){
 					next if exists $exist->{$x}->{$y};
-					$ref->{"$x-$y"}=$share->[$x]->{$y}->[0];
+					my $score=$share->[$x]->{$y};
+					$total+=$score;
+					next if ($x == $i and $y == $j);
+					next if $count1 < int($avg+($avg**0.5)*3);
+					next if $count1 > $avg*10;
+					next if $count2 < int($avg+($avg**0.5)*3);
+					next if $count2 > $avg*10;
+					if($score >= $base){
+						my $check1=&S_endcheck($x,$info);
+						my $check2=&S_endcheck($y,$info);
+						if($check1 > 0 and $check2 > 0){
+							$ref->{"$x-$y"}=$score;
+						}
+					}
 				}
 			}
 		}
 	}
 	
-	return;
+	return $total;
 }
 
+sub S_endcheck{
+	my ($index,$ref)=@_;
+	my $chr=$ref->[4*$index+0];
+	my $ori=$ref->[4*$index+2];
+	my (@F,@R,@case,@control);
+	my ($max,$min);
+	# my $Nmerge=5;
+	if($ori eq "R"){
+		$max=$index+$Nmerge;
+		$min=$index-(2*$Nmerge-1);
+		push @R,$index;
+		my $tmp_i=$index;
+		
+		
+		while(1){
+			$tmp_i--;
+			if($tmp_i <0){
+				last;
+			}
+			my ($chr_i,$ori_i)=@{$ref}[4*$tmp_i+0,4*$tmp_i+2];
+			if($chr ne $chr_i){
+				last;
+			}
+			
+			if($ori ne $ori_i){
+				last;
+			}
+			
+			if($tmp_i < $min){
+				last;
+			}
+			push @R,$tmp_i;
+		}
+		
+		$tmp_i=$index;
+		while(1){
+			$tmp_i++;
+			if($tmp_i >= ($#{$ref}+1)/4){
+				last;
+			}
+			my ($chr_i,$ori_i)=@{$ref}[4*$tmp_i+0,4*$tmp_i+2];
+			if($chr ne $chr_i){
+				last;
+			}
+			
+			if($ori ne $ori_i){
+				last;
+			}
+			
+			if($tmp_i > $max){
+				last;
+			}	
+			push @F,$tmp_i;
+		}
+		
+		my $count=$Nmerge;
+		while(@R > 0 and $count > 0){
+			push @case,(shift @R);
+			$count--;
+		}
+		
+		push @control,@R;
+		push @control,@F;
+		
+	}else{
+		$max=$index+(2*$Nmerge-1);
+		$min=$index-$Nmerge;
+		push @F,$index;
+		my $tmp_i=$index;
+		
+		while(1){
+			$tmp_i--;
+			if($tmp_i <0){
+				last;
+			}
+			my ($chr_i,$ori_i)=@{$ref}[4*$tmp_i+0,4*$tmp_i+2];
+			if($chr ne $chr_i){
+				last;
+			}
+			
+			if($ori ne $ori_i){
+				last;
+			}
+			
+			if($tmp_i < $min){
+				last;
+			}
+			push @R,$tmp_i;
+		}
+		
+		$tmp_i=$index;
+		while(1){
+			$tmp_i++;
+			if($tmp_i >= ($#{$ref}+1)/4){
+				last;
+			}
+			my ($chr_i,$ori_i)=@{$ref}[4*$tmp_i+0,4*$tmp_i+2];
+			if($chr ne $chr_i){
+				last;
+			}
+			
+			if($ori ne $ori_i){
+				last;
+			}
+			
+			if($tmp_i > $max){
+				last;
+			}	
+			push @F,$tmp_i;
+		}
+		
+		my $count=$Nmerge;
+		while(@F > 0 and $count > 0){
+			push @case,(shift @F);
+			$count--;
+		}
+		
+		push @control,@R;
+		push @control,@F;
+	}
+	
+	unless (@case > 0 and @control > 0){
+		return 0;
+	}
+	
+	my (@case_value,@control_value);
+	foreach my $i(@case){
+		push @case_value,$ref->[4*$i+3];
+	}
+	
+	foreach my $i(@control){
+		push @control_value,$ref->[4*$i+3];
+	}
+	
+	$R->set('case',\@case_value);
+	$R->set('control',\@control_value);
+	my $cmd=qq{
+p<-wilcox.test(case,control,paired=F, conf.level = 0.95,alternative='g',exact=T,correct=F)
+};
+	$R->run($cmd);
+	my $p_value=$R->get('p$p.value');
+	
+	# print "$index\t$p_value\n";
+	# print join(",",@case_value),"\t",join(",",@control_value),"\n";
+	if($p_value <= $p_th){
+		return 1;
+	}else{
+		return 0;
+	}
+}
 
-
-
+sub get_best{
+	my ($id,$share,$all,$type)=@_;
+	my @new=sort{
+		my $ta=$all->{$a}->{"total"};
+		my $tb=$all->{$b}->{"total"};
+		my $sa=$share->{$a};
+		my $sb=$share->{$b};
+		my ($pa,$fa)=split(/-/,$a);
+		my ($pb,$fb)=split(/-/,$b);
+		if($type eq "RL"){
+			$tb <=> $ta or $sb <=> $sa or $pb <=> $pa or $fa <=> $fb;
+		}elsif($type eq "LR"){
+			$tb <=> $ta or $sb <=> $sa or $pa <=> $pb or $fb <=> $fa;
+		}elsif($type eq "LL"){
+			$tb <=> $ta or $sb <=> $sa or $pa <=> $pb or $fa <=> $fb;
+		}elsif($type eq "RR"){
+			$tb <=> $ta or $sb <=> $sa or $pb <=> $pa or $fb <=> $fa;
+		}
+	}@{$id};
+	
+	return $new[0];
+}
 
 

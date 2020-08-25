@@ -1,14 +1,18 @@
 args=commandArgs(TRUE)
-a=read.table(args[1])
+if( file.info(args[1])$size!=0){
+	a=read.table(args[1])
+	attach(a)
+	r= as.numeric(a[,3])
+	r.center = (r < quantile(r, as.numeric(args[10])))
+	detach(a)
+	a = a[r.center, ]
+}else{
+	a= data.frame(matrix(ncol = 3, nrow = 0))
+}
 name=paste(args[2],"tiff",sep=".")
 colnames(a)=c("x","y","Count")
 xmin=as.numeric(args[4]);
 xmax=as.numeric(args[5]);
-attach(a)
-r= as.numeric(a[,3])
-r.center = (r < quantile(r, as.numeric(args[10])))
-detach(a)
-a = a[r.center, ]
 
 ymin=as.numeric(args[6]);
 ymax=as.numeric(args[7]);

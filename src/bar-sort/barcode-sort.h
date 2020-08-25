@@ -13,6 +13,7 @@ pthread_mutex_t mutex1;
 uint64_t total_valid_read=0;
 uint64_t total_seg_read=0;
 uint64_t total_seg_bar=0;
+uint64_t total_seg=0;
 
 struct chr
 {
@@ -57,6 +58,8 @@ struct sp_arg
 	mem_block * mem;
 	vector<int>* tid_id;
 	char flag;
+	char stat;
+	uint64_t cn;
 	uint32_t is_th;
 	string bam_file;
 };
@@ -68,6 +71,7 @@ struct seg_arg
 	uint32_t bar_th;
 	uint32_t seg_th;
 	uint32_t gap_th;
+	char stat;
 	uint64_t * f_offset;
 	bam_hdr_t * header;
 	read_pair * l_mem;

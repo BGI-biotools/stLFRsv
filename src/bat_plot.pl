@@ -27,7 +27,9 @@ while(<IN>){
 	}
 	
 	my ($chr1,$pos1,$chr2,$pos2)=@t[4..7];
+	my $ltype=$t[10];
 	my $line;
+	my $name="$chr1-$pos1--$chr2-$pos2-$ltype";
 	if($chr1 eq $chr2){
 		my $s1=$pos1-$ext;
 		my $e1=$pos1+$ext;
@@ -40,9 +42,9 @@ while(<IN>){
 		$s2=0 if $s2<0;
 		
 		if($e1 >= $s2){
-			$line="Stat_share $bam $mapq $bin $chr1 $s1 $e2 0 $out/$chr1-$pos1--$chr2-$pos2 0 $cutoff $type > $out/$chr1-$pos1--$chr2-$pos2.log 2>&1";
+			$line="Stat_share $bam $mapq $bin $chr1 $s1 $e2 0 $out/$name 0 $cutoff $type > $out/$name.log 2>&1";
 		}else{
-			$line="Stat_share_dif $bam $mapq $bin $chr1 $s1 $e1 $chr2 $s2 $e2 0 $out/$chr1-$pos1--$chr2-$pos2 0 $cutoff $type > $out/$chr1-$pos1--$chr2-$pos2.log 2>&1";
+			$line="Stat_share_dif $bam $mapq $bin $chr1 $s1 $e1 $chr2 $s2 $e2 0 $out/$name 0 $cutoff $type > $out/$name.log 2>&1";
 		}
 	}else{
 		my $s1=$pos1-$ext;
@@ -55,7 +57,7 @@ while(<IN>){
 		
 		$s2=0 if $s2<0;
 		
-		$line="Stat_share_dif $bam $mapq $bin $chr1 $s1 $e1 $chr2 $s2 $e2 0 $out/$chr1-$pos1--$chr2-$pos2 0 $cutoff $type > $out/$chr1-$pos1--$chr2-$pos2.log 2>&1";
+		$line="Stat_share_dif $bam $mapq $bin $chr1 $s1 $e1 $chr2 $s2 $e2 0 $out/$name 0 $cutoff $type > $out/$name.log 2>&1";
 		
 	}
 	$semaphore->down();

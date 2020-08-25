@@ -1515,7 +1515,7 @@ h_dx2<-wilcox.test(dex2,cex2,paired=FALSE, conf.level = 0.95,alternative='g',exa
 		goto PHASE;
 	}
 	
-	unless($f_bin=~ /^\d+$/){
+	unless(defined $f_bin and $f_bin=~ /^\d+$/){
 		$judge2="NULL:REGION:NA:NA:NA:NA";
 		goto PHASE;
 	}

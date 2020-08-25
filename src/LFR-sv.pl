@@ -28,7 +28,7 @@ my $is;
 my $Nmerge;
 my $bin;
 my $low;
-my $ex;
+my $p_th;
 my $phase_dir;
 my $black_list;
 my $control_list;
@@ -36,8 +36,6 @@ my $id_num;
 my $Smerge;
 my $ncpu;
 my $human;
-my $blow;
-my $bex;
 my $mergemax;
 my $qc1;
 my $qc2;
@@ -45,6 +43,8 @@ my $qc3;
 my $rlen;
 my $mlen;
 my $sp;
+my $cn;
+my $bin_r;
 my $help;
 
 
@@ -53,7 +53,7 @@ my $Basename=basename($0);
 my $USAGE = qq{
 Name:
 	$Basename
-	version 2.2pre
+	version 2.2
 Function:
 	Detect the SVs from stLFR WGS data
 Usage:
@@ -64,17 +64,15 @@ Options:
 	-ncpu <int>	thread number for running pipeline.[default 1]
 	-bar_th <int> at least N read pairs in one barcode.[default 8]
 	-seg_th <int> at least N read pairs in one segment.[default 4]
-	-gap <int> define the gap size which should be considered as different segment.[default 20000]
+	-gap <int> define the gap size which should be considered as different segment.
 	-size <int> output SV length.[default 20000]
 	-is <int> proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]
-	-bin <int> bin size for cluster the segments.[default 2000]
-	-merge1 <int> N continue outline bins could be considered as the same break point and will be merged into one evidence.[default 5]
+	-bin <int> bin size for cluster the segments.
+	-merge1 <int> N continue outline bins could be considered as the same break point and will be merged into one evidence.
 	-merge2 <int> SVs nearby under N binsize will be considered as one event.[default 5]
 	-mmax <int> the max SVs allowed in one event.[default 4]
-	-low1 <float/int> single end barcode counts threshold, 0-1 float: higher than X percentage counts; 1> int: higher than X counts.[default 0.95]
-	-low2 <float/int> end to end barcode counts threshold, 0-1 float: higher than X percentage counts; 1> int: higher than X counts.[default 0.9995]
-	-ex1 <float> when low1 is a float of 0-1, exclude the bins which depth under ex1.[default 0.2]
-	-ex2 <float> when low2 is a float of 0-1, exclude the bins which depth under ex2.[default 0.2]
+	-low <int> lowest shared barcode counts threshold.[default 4]
+	-p_th <float> break ends with P value lower than this threshold will be considered as candidates.[[default 0.1]
 	-phase <string> formatted phase result directory including phased barcode and region by chromosome.[default NULL]
 	-bl <string> black list file(BED format).[default NULL]
 	-cl <string> sorted control list file(BEDPE format).[default NULL](Be sure the chromosome and position are sorted in one line!!!)
@@ -82,39 +80,13 @@ Options:
 	-human <Y/N> for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]
 	-qc1 <float> valid read pair ratio for SV detection.[default 0.60]
 	-qc2 <float> average read pair count for one barcode.[default 30]
-	-qc3 <float> average segment end count for one bin.[default 8]
-	-sp <float> sample percentage for DNA fragment length statistic.[default 0.1]
+	-qc3 <float> average segment end count for one bin.[default 15]
+	-sp <float> sample percentage for DNA fragment length statistic.[default 0.2]
+	-cn <int> sample count for read pair distance statistic.[default 20000000]
 	-rlen <int> read length of one read.[default 100]
 	-mlen <int> physical limit for the long DNA segment.[default 400000]
 	-help Show this message.
 };
-
-$ncpu ||= 1;
-$tmp ||= "/tmp";
-$bar_th||=8;
-$seg_th ||= 4;
-$gap ||= 20000;
-$size ||= 20000;
-$is ||=300;
-$bin ||=2000;
-$Nmerge ||=5;
-$low ||=0.95;
-$blow ||= 0.9995;
-$ex ||=0.2;
-$bex ||=0.2;
-$phase_dir ||="NULL";
-$black_list||="NULL";
-$control_list||="NULL";
-$id_num||=4;
-$Smerge||=5;
-$human||="N";
-$mergemax ||=4;
-$qc1 ||=0.6;
-$qc2 ||=30;
-$qc3 ||=8;
-$rlen ||=100;
-$mlen ||=400000;
-$sp ||=0.1;
 
 my $valid;
 $valid = GetOptions(
@@ -130,10 +102,7 @@ $valid = GetOptions(
 "bin=i" =>\$bin,
 "merge1=i" =>\$Nmerge,
 "merge2=i" =>\$Smerge,
-"low1=f" =>\$low,
-"low2=f" =>\$blow,
-"ex1=f" =>\$ex,
-"ex2=f" =>\$bex,
+"low=i" =>\$low,
 "mmax=i" =>\$mergemax,
 "phase=s" => \$phase_dir,
 "bl=s" => \$black_list,
@@ -144,9 +113,33 @@ $valid = GetOptions(
 "qc2=f" => \$qc2,
 "qc3=f" => \$qc3,
 "sp=f" => \$sp,
+"cn=i" => \$cn,
 "rlen=i" => \$rlen,
 "mlen=i" => \$mlen
 );
+
+$ncpu ||= 1;
+$tmp ||= "/tmp";
+$bar_th||=8;
+$seg_th ||= 4;
+$size ||= 20000;
+$is ||=300;
+$low ||=4;
+$p_th ||=0.1;
+$phase_dir ||="NULL";
+$black_list||="NULL";
+$control_list||="NULL";
+$id_num||=4;
+$Smerge||=5;
+$human||="N";
+$mergemax ||=4;
+$qc1 ||=0.6;
+$qc2 ||=30;
+$qc3 ||=15;
+$rlen ||=100;
+$mlen ||=400000;
+$sp ||=0.2;
+$cn ||=20000000;
 
 die "$USAGE" unless (($bam and $out) and !$help);
 
@@ -188,11 +181,6 @@ if(!(-e "$bam.bai")){
 
 my $start = time;
 
-print STDERR "Creat the sorted barcoded file\n";
-$line="barcode-sort $bam $ncpu $out $bamname $bar_th $seg_th $gap $is $human";
-if(executeSystemCall($line)){
-	die "Failure during creating the sorted barcoded file $out/$bamname.sbf\n";
-}
 ####QC#########
 open SAM,"samtools view -H $bam|" or die $!;
 my $reflen=0;
@@ -214,51 +202,94 @@ if($reflen == 0){
 	die "Wrong bam header data for the reference!\nPlease check the Bam file...\n";
 }
 
-open IN,"$out/$bamname.stat" or die $!;
-my $tl=<IN>;
-close IN;
-chomp $tl;
-my ($tread,$vread,$vbar)=split(/\t/,$tl);
-my $q1=$vread/$tread;
-my $q2=$vread/$vbar;
-my $q3=$vbar*2/($reflen/$bin);
-if($q1 < $qc1){
-	print STDERR "Warning: valid read pair ratio is lower than $qc1, the result may be unreliable!\n";
+my $stat=0;
+if(defined $gap and defined $bin and defined $Nmerge){
+	print STDERR "Use the user specific parameters\n";
+	print STDERR "Bin size: $bin\n";
+	print STDERR "Merge windows: $Nmerge\n";
+	print STDERR "Gap size: $gap\n";
+}else{
+	$stat=1;
 }
 
-if($q2 < $qc2){
-	print STDERR "Warning: average read pair on one barcode is lower than $qc2, the result may be unreliable!\n";
-}
-
-if($q3 < $qc3){
-	print STDERR "Warning: average segment end in one bin is lower than $qc3, the result may be unreliable!\n";
-}
-
-my ($s1,$s2,$s3,$bin_r);
-if(1){
+if($stat){
+	print STDERR "User didn't specify the bin, merge1 and gap\n";
+	print STDERR "Will set these parameters automatically\n";
+	print STDERR "Gather read pair distances form the largest contig\n";
+	$line="barcode-sort $bam $ncpu $out $bamname $bar_th $seg_th $mlen $is $human Y $cn";
+	if(executeSystemCall($line)){
+		die "Failure during creating the sorted barcoded file $out/$bamname.gap\n";
+	}
+	
 	my $R = Statistics::R->new();
 	my $cmd=qq{
 a = read.table("$out/$bamname.gap")
 x<-a[,1]
 x<-x[which(x<$mlen)]
-ratio<-length(which(x < $bin))/length(x)
 x<-x[which(x>$rlen)]
 len1<-quantile(x,0.65)
 len2<-quantile(x,0.93)
 len3<-quantile(x,0.98)
 };
+	my ($s1,$s2,$s3);
 	$R->run($cmd);
 	$s1=$R->get('len1');
 	$s2=$R->get('len2');
 	$s3=$R->get('len3');
-	$bin_r=$R->get('ratio');
-	$s2=int($s2/$s1+0.5);
+	
+	$Nmerge=int($s2/$s1+0.5);
+	$bin=int($s1/100+0.5)*100;
+	$gap=int($s3/100+0.5)*100;
+	print STDERR "According to the read pair distance statistic:\n";
+	print STDERR "bin size is set to $bin\n";
+	print STDERR "merge bin number is set to $Nmerge\n";
+	print STDERR "gap size is set to $gap\n";
+	
+	$bin_r=0.65;
 }
-print STDERR "According to the read pair distance statistic:\n";
-print STDERR "bin size should be set around $s1\n";
-print STDERR "merge bin number should be set around $s2\n";
-print STDERR "gap size should be set around $s3\n";
+
+print STDERR "Creat the sorted barcoded file\n";
+$line="barcode-sort $bam $ncpu $out $bamname $bar_th $seg_th $gap $is $human N $cn";
+if(executeSystemCall($line)){
+	die "Failure during creating the sorted barcoded file $out/$bamname.sbf\n";
+}
+
+open IN,"$out/$bamname.stat" or die $!;
+my $tl=<IN>;
+close IN;
+chomp $tl;
+my ($tread,$vread,$vbar,$vseg)=split(/\t/,$tl);
+my $q1=$vread/$tread;
+my $q2=$vread/$vbar;
+my $q3=$vseg*2/($reflen/$bin);
+if($q1 < $qc1){
+	print STDERR "Warning: valid read pair ratio $q1 is lower than $qc1, the result may be unreliable!\n";
+}
+
+if($q2 < $qc2){
+	print STDERR "Warning: average read pair on one barcode $q2 is lower than $qc2, the result may be unreliable!\n";
+}
+
+if($q3 < $qc3){
+	print STDERR "Warning: average segment end in one bin $q3 is lower than $qc3, the result may be unreliable!\n";
+}
+
+
+unless($stat){
+	my $R = Statistics::R->new();
+	my $cmd=qq{
+a = read.table("$out/$bamname.all.gap")
+x<-a[,1]
+x<-x[which(x<$mlen)]
+ratio<-length(which(x < $bin))/length(x)
+};
+	$R->run($cmd);
+	$bin_r=$R->get('ratio');
+}
+
+
 ###########################
+######freq for all#########
 my $bar_max=$vbar*$sp;
 my %bar_freq;
 $bar_max= 2000000 if $bar_max < 2000000;
@@ -280,6 +311,7 @@ while(<IN>){
 	}
 }
 
+
 close IN;
 
 open OUT,">$out/$bamname.freq" or die $!;
@@ -288,6 +320,72 @@ foreach my $key(sort {$a <=> $b} keys %bar_freq){
 	print OUT "$key\t$f_ratio\n";
 }
 close OUT;
+
+######freq for high quanlity#########
+$countbar=0;
+@one_bar=();
+%bar_freq=();
+my $lbar=-1;
+open OUT,">$out/$bamname.HQ.seg" or die $!;
+open IN,"$out/$bamname.sbf" or die $!;
+binmode(IN);
+my $buf;
+while(read(IN,$buf,8)){
+	last if $countbar == $bar_max;
+	my $bar=unpack("%64Q",$buf);
+
+	read(IN,$buf,4);
+	my $index=unpack("%32L",$buf);
+
+	read(IN,$buf,32);
+	my $name=unpack("Z32",$buf);
+
+	read(IN,$buf,4);
+	my $s=unpack("%32L",$buf);
+
+	read(IN,$buf,4);
+	my $e=unpack("%32L",$buf);
+
+	read(IN,$buf,4);
+	my $sup=unpack("%32L",$buf);
+	
+	if($bar != $lbar){
+		if(@one_bar >0){
+			&process_bar;
+			@one_bar=();
+			$lbar=$bar;
+			$countbar++;
+		}
+		push @one_bar,$e-$s;
+		print OUT $e-$s,"\n";
+	}else{
+		push @one_bar,$e-$s;
+		print OUT $e-$s,"\n";
+	}
+}
+close IN;
+close OUT;
+
+open OUT,">$out/$bamname.HQ.freq" or die $!;
+foreach my $key(sort {$a <=> $b} keys %bar_freq){
+	my $f_ratio=($bar_freq{$key}->[0]/$bar_freq{$key}->[1])*$bin_r;
+	print OUT "$key\t$f_ratio\n";
+}
+close OUT;
+
+my $seg_size;
+if(1){
+	my $R = Statistics::R->new();
+	my $cmd=qq{
+a = read.table("$out/$bamname.HQ.seg")
+x<-a[,1]
+len1<-quantile(x,0.65)
+};
+	$R->run($cmd);
+	$seg_size=$R->get('len1');
+	$seg_size=int($seg_size/100+0.5)*100;
+	print STDERR "Most high quanlity segment length is under $seg_size.(65%)\n";
+}
 
 ###########################
 print STDERR "Step_1 single end cluster\n";
@@ -298,8 +396,8 @@ if(executeSystemCall($line)){
 }
 
 print STDERR "Step_2 link the cluster to cluster\n";
-
-$line="link-id $out/$bamname.sin $out/$bamname.lnd $low $ex $blow $bex $gap $size $bin $Nmerge";
+my $avg_dep=int($q3+0.5);
+$line="link-id $out/$bamname.sin $out/$bamname.lnd $out/$bamname.HQ.freq $low $avg_dep $p_th $gap $seg_size $size $bin $Nmerge $id_num";
 
 if(executeSystemCall($line)){
 	die "Failure during creating the link file $out/$bamname.lnd\n";
@@ -356,7 +454,7 @@ if(executeSystemCall($line)){
 
 #step9
 print STDERR "Step_9 plot heatmaps for final output\n";
-my $ext=3*$gap;
+my $ext=4*$gap;
 $line="bat_plot $bam $out/$bamname.final 0 $bin $ext 0 1 $out/heatmap_plot $ncpu 0";
 if(executeSystemCall($line)){
 	die "Failure during plotting the heatmaps\n";

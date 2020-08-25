@@ -79,11 +79,17 @@ while(scalar(keys %checkid) > 0){
 	
 	$sid++;
 	foreach my $id (@merge){
-		delete $checkid{$id};
-		
-		my @data=@{$info{$id}};
-		splice(@data,7,0,$sup{$data[1]}{$data[2]});
-		unshift @data,"S$sid";
+		my @data;
+		if(exists $checkid{$id}){
+			delete $checkid{$id};
+			@data=@{$info{$id}};
+			splice(@data,7,0,$sup{$data[1]}{$data[2]});
+			unshift @data,"S$sid";
+		}else{
+			@data=@{$info{$id}};
+			splice(@data,7,0,$sup{$data[1]}{$data[2]});
+			unshift @data,"*S$sid";
+		}
 		
 		my %chains;
 		foreach my $chainid(@{$idtochain{$id}}){
@@ -167,10 +173,17 @@ while(scalar(keys %checkid) > 0){
 	
 	$sid++;
 	foreach my $id (@merge){
-		delete $checkid{$id};
-		my @data=@{$info{$id}};
-		splice(@data,7,0,$sup{$data[1]}{$data[2]});
-		unshift @data,"S$sid";
+		my @data;
+		if(exists $checkid{$id}){
+			delete $checkid{$id};
+			@data=@{$info{$id}};
+			splice(@data,7,0,$sup{$data[1]}{$data[2]});
+			unshift @data,"S$sid";
+		}else{
+			@data=@{$info{$id}};
+			splice(@data,7,0,$sup{$data[1]}{$data[2]});
+			unshift @data,"*S$sid";
+		}
 		
 		my %chains;
 		foreach my $chainid(@{$idtochain{$id}}){

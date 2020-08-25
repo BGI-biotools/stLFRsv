@@ -1,14 +1,18 @@
 args=commandArgs(TRUE)
-a=read.table(args[1])
+if( file.info(args[1])$size!=0){
+	a=read.table(args[1])
+	attach(a)
+	r= as.numeric(a[,3])
+	r.center = (r < quantile(r, as.numeric(args[8])))
+	detach(a)
+	a = a[r.center, ]
+}else{
+	 a= data.frame(matrix(ncol = 3, nrow = 0))
+}
 name=paste(args[2],"tiff",sep=".")
 colnames(a)=c("x","y","Count")
 cmin=as.numeric(args[4])
 cmax=as.numeric(args[5])
-attach(a)
-r= as.numeric(a[,3])
-r.center = (r < quantile(r, as.numeric(args[8])))
-detach(a)
-a = a[r.center, ]
 
 tiff(name,width =2000,height =1500,units = "px",compression = "lzw",res=300)
 library(ggplot2)
