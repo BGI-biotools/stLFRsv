@@ -3,9 +3,9 @@ use warnings;
 use Statistics::R;
 use List::Util;
 
-die "Usage: $0 <cluster file> <link id file> <filter seg file> <low depth count> <avg depth> <single end P_th> <gap size> <seg size> <detect size> <bin size> <N merge bins> <N breaks>\n" if @ARGV != 12;
+die "Usage: $0 <cluster file> <link id file> <filter seg file> <low depth count> <avg depth> <avg sd> <single end P_th> <gap size> <seg size> <detect size> <bin size> <N merge bins> <N breaks>\n" if @ARGV != 13;
 
-my ($infile,$outfile,$freqfile,$low,$avg,$p_th,$gap,$seg_size,$size,$bin,$Nmerge,$Nbreak)=@ARGV;
+my ($infile,$outfile,$freqfile,$low,$avg,$add_t,$p_th,$gap,$seg_size,$size,$bin,$Nmerge,$Nbreak)=@ARGV;
 
 my %seg_freq;
 my $max_len=0;
@@ -137,9 +137,9 @@ if(1){
 			
 			#1
 			next unless $sharearray[$i]{$j}>= $low;
-			next if $supa < int($avg+($avg**0.5)*3);
+			next if $supa < int($avg+($avg**0.5)*$add_t);
 			next if $supa > $avg*10;
-			next if $supb < int($avg+($avg**0.5)*3);
+			next if $supb < int($avg+($avg**0.5)*$add_t);
 			next if $supb > $avg*10;
 			#2
 			my $judge_len;
@@ -677,9 +677,9 @@ sub singlelowBest{
 					my $score=$share->[$x]->{$y};
 					$total+=$score;
 					next if ($x == $i and $y == $j);
-					next if $count1 < int($avg+($avg**0.5)*3);
+					next if $count1 < int($avg+($avg**0.5)*$add_t);
 					next if $count1 > $avg*10;
-					next if $count2 < int($avg+($avg**0.5)*3);
+					next if $count2 < int($avg+($avg**0.5)*$add_t);
 					next if $count2 > $avg*10;
 					if($score >= $base){
 						my $check1=&S_endcheck($x,$info);

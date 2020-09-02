@@ -16,15 +16,18 @@ open IN,"<$sv" or die $!;
 <IN>;
 my %hash;
 my %type;
+my %uni;
 while(<IN>){
 	chomp;
 	my @l=split;
+	$uni{$l[1]}+=1;
+	next if $uni{$l[1]}>1;
     if($filt==1){
-		next unless $l[11] eq "PASS";
+		next unless $l[12] eq "PASS";
     }elsif($filt==2){
-		next unless ($l[11] eq "PASS" || $l[11] eq "PASS|COMMON");
-        if($l[11] eq "PASS|COMMON"){
-        	$l[11]="PASS";
+		next unless ($l[12] eq "PASS" || $l[12] eq "PASS|COMMON");
+        if($l[12] eq "PASS|COMMON"){
+        	$l[12]="PASS";
 		}
 	}
 	my $gt=(split/:/,$l[13],)[1];
@@ -43,8 +46,8 @@ while(<IN>){
 		}elsif($type eq "DUP"){
 			$len="+".$len;
 		}
-		push @{$hash{$l[4]}{$l[5]}},"$l[4]\t$l[5]\t.\tN\t<$type>\t.\t$l[11]\tSVTYPE=$type;SVLEN=$len;END=$l[7];SOURCE=stLFRsv\tGT\t$gt\n";
-		push @{$type{"$type\_$l[4]"}},[$l[5],$l[7],abs($len),$l[11]];
+		push @{$hash{$l[4]}{$l[5]}},"$l[4]\t$l[5]\t.\tN\t<$type>\t.\t$l[12]\tSVTYPE=$type;SVLEN=$len;END=$l[7];SOURCE=stLFRsv\tGT\t$gt\n";
+		push @{$type{"$type\_$l[4]"}},[$l[5],$l[7],abs($len),$l[12]];
 	}else{
 		my ($type1,$type2);
 		if($l[10] eq "TRA1"){
@@ -60,8 +63,8 @@ while(<IN>){
 			$type2="\[$l[4]:$l[5]\[N";
 			$type1="N\]$l[6]:$l[7]\]";
 		}
-		push @{$hash{$l[4]}{$l[5]}},"$l[4]\t$l[5]\t.\tN\t$type1\t.\t$l[11]\tSVTYPE=BND;SOURCE=stLFRsv\tGT\t$gt\n";	
-		push @{$hash{$l[6]}{$l[7]}},"$l[6]\t$l[7]\t.\tN\t$type2\t.\t$l[11]\tSVTYPE=BND;SOURCE=stLFRsv\tGT\t$gt\n";	
+		push @{$hash{$l[4]}{$l[5]}},"$l[4]\t$l[5]\t.\tN\t$type1\t.\t$l[12]\tSVTYPE=BND;SOURCE=stLFRsv\tGT\t$gt\n";	
+		push @{$hash{$l[6]}{$l[7]}},"$l[6]\t$l[7]\t.\tN\t$type2\t.\t$l[12]\tSVTYPE=BND;SOURCE=stLFRsv\tGT\t$gt\n";	
 		my($c1,$c2);
 		$c1=$l[9];
 		if($c1 eq "RL"){
@@ -71,8 +74,8 @@ while(<IN>){
 		}else{
 			$c2=$c1;
 		}
-		push @{$type{"BND_$l[4]"}},[$l[5],$l[6],$l[7],$c1,$l[11]];
-		push @{$type{"BND_$l[6]"}},[$l[7],$l[4],$l[5],$c2,$l[11]];
+		push @{$type{"BND_$l[4]"}},[$l[5],$l[6],$l[7],$c1,$l[12]];
+		push @{$type{"BND_$l[6]"}},[$l[7],$l[4],$l[5],$c2,$l[12]];
 	}
 
 }

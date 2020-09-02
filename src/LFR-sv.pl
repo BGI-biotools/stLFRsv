@@ -28,6 +28,7 @@ my $is;
 my $Nmerge;
 my $bin;
 my $low;
+my $sd;
 my $p_th;
 my $phase_dir;
 my $black_list;
@@ -72,7 +73,8 @@ Options:
 	-merge2 <int> SVs nearby under N binsize will be considered as one event.[default 5]
 	-mmax <int> the max SVs allowed in one event.[default 4]
 	-low <int> lowest shared barcode counts threshold.[default 4]
-	-p_th <float> break ends with P value lower than this threshold will be considered as candidates.[[default 0.1]
+	-sd <int> break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]
+	-p_th <float> break ends significantly high with P value lower than this threshold will be considered as candidates.[default 0.1]
 	-phase <string> formatted phase result directory including phased barcode and region by chromosome.[default NULL]
 	-bl <string> black list file(BED format).[default NULL]
 	-cl <string> sorted control list file(BEDPE format).[default NULL](Be sure the chromosome and position are sorted in one line!!!)
@@ -103,6 +105,8 @@ $valid = GetOptions(
 "merge1=i" =>\$Nmerge,
 "merge2=i" =>\$Smerge,
 "low=i" =>\$low,
+"sd=i" =>\$sd,
+"p_th=f" =>\$p_th,
 "mmax=i" =>\$mergemax,
 "phase=s" => \$phase_dir,
 "bl=s" => \$black_list,
@@ -125,6 +129,7 @@ $seg_th ||= 4;
 $size ||= 20000;
 $is ||=300;
 $low ||=4;
+$sd ||=3;
 $p_th ||=0.1;
 $phase_dir ||="NULL";
 $black_list||="NULL";
@@ -281,6 +286,7 @@ unless($stat){
 a = read.table("$out/$bamname.all.gap")
 x<-a[,1]
 x<-x[which(x<$mlen)]
+x<-x[which(x>$rlen)]
 ratio<-length(which(x < $bin))/length(x)
 };
 	$R->run($cmd);
@@ -397,7 +403,7 @@ if(executeSystemCall($line)){
 
 print STDERR "Step_2 link the cluster to cluster\n";
 my $avg_dep=int($q3+0.5);
-$line="link-id $out/$bamname.sin $out/$bamname.lnd $out/$bamname.HQ.freq $low $avg_dep $p_th $gap $seg_size $size $bin $Nmerge $id_num";
+$line="link-id $out/$bamname.sin $out/$bamname.lnd $out/$bamname.HQ.freq $low $avg_dep $sd $p_th $gap $seg_size $size $bin $Nmerge $id_num";
 
 if(executeSystemCall($line)){
 	die "Failure during creating the link file $out/$bamname.lnd\n";

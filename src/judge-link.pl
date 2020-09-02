@@ -2137,7 +2137,7 @@ sub get_mapq_from_bam{
 		}
 		
 		if($type eq "++"){
-			push @{$pe->[0]},[($pos,$mpos)];
+			push @{$pe->[3]},[($pos,$mpos)];
 		}	
 	};
 	$index->fetch($hfile,$header->parse_region("$chr1:$start1-$end1"),$callback1);
