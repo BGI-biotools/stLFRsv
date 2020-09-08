@@ -27,33 +27,33 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 ###### Parameters:
 |  Parameter  |  Type | Description   |
 | :------------ | :------------ | :------------ |
-|-bam |<string> |  original sorted and markduped bam file,if the index dose not exist, will be created.\[necessary\]|
-|-out |<string> |  output SV dir.\[necessary\](warning:if exists, the output dir will be cleaned first!!!!!)|
-|-ncpu |<int>  |   thread number for running pipeline.[default 1]|
-|-bar_th |<int> |at least N read pairs in one barcode.[default 8]|
-|-seg_th| <int> |at least N read pairs in one segment.[default 4]|
-|-gap |<int> |define the gap size which should be considered as different segment.|
-|-size |<int>| output SV length.[default 20000]|
-|-is |<int> |proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]|
-|-bin |<int>| bin size for cluster the segments.|
-|-merge1 |<int>| N continue outline bins could be considered as the same break point and will be merged into one evidence.|
-|-merge2 |<int>| SVs nearby under N binsize will be considered as one event.[default 5]|
-|-mmax |<int> |the max SVs allowed in one event.[default 4]|
-|-low |<int>|lowest shared barcode counts threshold.[default 4]|
-|-sd |<int>| break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]|
-|-p_th |<float> |break ends significantly high with P value lower than this threshold will be considered as candidates.[default 0.1]|
-|-phase |<string> |formatted phase result directory including phased barcode and region by chromosome.[default NULL]|
-|-bl| <string> |black list file(BED format).[default NULL]|
-|-cl| <string>| sorted control list file(BEDPE format).\[default NULL\](Be sure the chromosome and position are sorted in one line!!!)|
-|-sc |<int>| allow max sv counts for the same position in one direction.[default 4]|
-|-human| <Y/N>| for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
-|-qc1| <float>| valid read pair ratio for SV detection.[default 0.60]|
-|-qc2 |<float>| average read pair count for one barcode.[default 30]|
-|-qc3 |<float>| average segment end count for one bin.[default 15]|
-|-sp |<float>| sample percentage for DNA fragment length statistic.[default 0.2]|
-|-cn| <int> |sample count for read pair distance statistic.[default 20000000]|
-|-rlen| <int> |read length of one read.[default 100]|
-|-mlen |<int>| physical limit for the long DNA segment.[default 400000]|
+|-bam |\<string> |  original sorted and markduped bam file,if the index dose not exist, will be created.\[necessary\]|
+|-out |\<string> |  output SV dir.\[necessary\](warning:if exists, the output dir will be cleaned first!!!!!)|
+|-ncpu |\<int>  |   thread number for running pipeline.[default 1]|
+|-bar_th |\<int> |at least N read pairs in one barcode.[default 8]|
+|-seg_th| \<int> |at least N read pairs in one segment.[default 4]|
+|-gap |\<int> |define the gap size which should be considered as different segment.|
+|-size |\<int>| output SV length.[default 20000]|
+|-is |\<int> |proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]|
+|-bin |\<int>| bin size for cluster the segments.|
+|-merge1 |\<int>| N continue outline bins could be considered as the same break point and will be merged into one evidence.|
+|-merge2 |\<int>| SVs nearby under N binsize will be considered as one event.[default 5]|
+|-mmax |\<int> |the max SVs allowed in one event.[default 4]|
+|-low |\<int>|lowest shared barcode counts threshold.[default 4]|
+|-sd |\<int>| break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]|
+|-p_th |\<float> |break ends significantly high with P value lower than this threshold will be considered as candidates.[default 0.1]|
+|-phase |\<string> |formatted phase result directory including phased barcode and region by chromosome.[default NULL]|
+|-bl| \<string> |black list file(BED format).[default NULL]|
+|-cl| \<string>| sorted control list file(BEDPE format).\[default NULL\](Be sure the chromosome and position are sorted in one line!!!)|
+|-sc |\<int>| allow max sv counts for the same position in one direction.[default 4]|
+|-human| \<Y/N>| for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
+|-qc1| \<float>| valid read pair ratio for SV detection.[default 0.60]|
+|-qc2 |\<float>| average read pair count for one barcode.[default 30]|
+|-qc3 |\<float>| average segment end count for one bin.[default 15]|
+|-sp |\<float>| sample percentage for DNA fragment length statistic.[default 0.2]|
+|-cn| \<int> |sample count for read pair distance statistic.[default 20000000]|
+|-rlen| \<int> |read length of one read.[default 100]|
+|-mlen |\<int>| physical limit for the long DNA segment.[default 400000]|
 |-help| |Show help message.|
 
 ## Result file type（by generate order）：
