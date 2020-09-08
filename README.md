@@ -37,7 +37,7 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-is |\<int> |proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]|
 |-bin |\<int>| bin size for cluster the segments.|
 |-merge1 |\<int>| N continue outline bins could be considered as the same break point and will be merged into one evidence.|
-|-merge2 |\<int>| SVs nearby under N binsize will be considered as one event.[default 5]|
+|-merge2 |\<int>| SVs nearby under N bin size will be considered as one event.[default 5]|
 |-mmax |\<int> |the max SVs allowed in one event.[default 4]|
 |-low |\<int>|lowest shared barcode counts threshold.[default 4]|
 |-sd |\<int>| break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]|
@@ -48,8 +48,8 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-sc |\<int>| allow max sv counts for the same position in one direction.[default 4]|
 |-human| \<Y/N>| for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
 |-qc1| \<float>| valid read pair ratio for SV detection.[default 0.60]|
-|-qc2 |\<float>| average read pair count for one barcode.[default 30]|
-|-qc3 |\<float>| average segment end count for one bin.[default 15]|
+|-qc2 |\<int>| average read pair count for one barcode.[default 30]|
+|-qc3 |\<int>| average segment end count for one bin.[default 15]|
 |-sp |\<float>| sample percentage for DNA fragment length statistic.[default 0.2]|
 |-cn| \<int> |sample count for read pair distance statistic.[default 20000000]|
 |-rlen| \<int> |read length of one read.[default 100]|
@@ -102,13 +102,13 @@ the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/p
 
 ## Noun explanation
 ![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig1.png)
-**segment** 
+**segment**   
 composed by several continue read pairs within a `gap` size, can be regarded as a DNA fragment without SVs. segment with read pairs more than `seg_th` is defined as `High Quality segment`   
-**barcode**
+**barcode**   
 include all read pairs with the same barcode tag. one barcode may contains one or more segment. barcode with read pairs more than `bar_th` is defined as `High Quality barcode`   
-**single end cluster**
+**single end cluster**   
 or may be called "single end breakpoint". several segments break at the same position and the same orientation, the cluster of these segments is defined as one `single end cluster`   
-**SV breakpoint**
+**SV breakpoint**   
 or may be called "pair end breakpoint". when two `single end cluster` are linked by co-barcode, it is called one `SV breakpoint`   
-**SV Event**
+**SV Event**   
 a general SV such as Deletion，Inversion，Duplication or Transaction etc. one `SV Event` maybe constructed by one or two (more than two sometimes) SV breakpoint   
