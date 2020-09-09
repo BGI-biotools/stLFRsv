@@ -1,11 +1,20 @@
+## Content 
+### 	[Introuction](#jump1)
+### 	[Directory Structure](#jump2)
+### 	[Parameter Description](#jump3)
+### 	[Result file type](#jump4)
+### 	[Noun explanation](#jump5)
+### 	[Parameter details and Algorithm](#jump6)
+### 	[Result format explaination](#jump7)
+
 # stLFRsv
-## Introuction:
+## <span id="jump1"> Introuction: </span>
 Structure variation(SV) pipeline for stLFR co-barcode reads data.
 This tool is applicable to stLFR technology and similar co-barcode data. Currently running on stLFR data, theoretically it is also applicable to other linked read data. You can analyze and test this tools by converting the data to the `read_id#XXX_XXX_XXX` format on read ID(`XXX_XXX_XXX` is the read barcode).
 
 **Share barcode** information is used to detect breakpoint signals of structural variation (SV), such as: equilibrium translocation, inversion, deletion, duplication, and more complex structural breakpoints, which can be combined with CNV results and phase results. The accuracy of the structural variation is limited by the distribution density and length of linked reads on DNA molecules. For example, stLFR kits built with 1.5ng human DNA starting volume(about 30x significant depth) can produce data that can guarantee SV detection accuracy above 20K.
 
-## Directory Structure:
+## <span id="jump2"> Directory Structure: </span>
 
 * **bin**: necessary binarys to run the pipeline
 * **data**: pre-build control list and black list
@@ -19,7 +28,7 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 (Of course, you can replace the binarys by *.pl in the src with a little modification in LFR-sv.pl)
 
 
-## Parameter Description：
+## <span id="jump3"> Parameter Description：</span>
 ###### Example:
 ```
 ./LFR-sv -bam example/L0.sort.rmdup.bam -out example/result -ncpu 20 -phase example/phase_out -bl data/bad_region_hg19_withchr.bllist -cl data/human_hg19_2000_20000_20000_0.9995_0.95_withchr.conlist -human Y
@@ -56,7 +65,7 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-mlen |\<int>| Physical limit for the long DNA segment.[default 400000]|
 |-help| |Show help message.|
 
-## Result file type（by generate order）：
+## <span id="jump4"> Result file type（by generate order）： </span>
 **sbf file**  
 The binary segment file which generated form bam with the gap, bar_th, seg_th parameter.  
 Segment binary format：  
@@ -100,7 +109,7 @@ the final PASS SVs, and the `final.NoRegionFilter` is another final file that no
 **heatmap_plot folder**  
 the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you want.  
 
-## Noun explanation
+## <span id="jump5"> Noun explanation  </span>
 ![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig1.png)
 **segment**   
 Composed by several continue read pairs within a `gap` size, can be regarded as a DNA fragment without SVs. Segment with read pairs more than `seg_th` is defined as `High Quality segment`.   
@@ -113,7 +122,7 @@ Or may be called "pair end breakpoint". When two `single end cluster` are linked
 **SV Event**   
 A general SV such as Deletion，Inversion，Duplication or Transaction etc. One `SV Event` maybe constructed by one or two (more than two sometimes) SV breakpoint.   
 
-## Parameter details and Algorithm 
+## <span id="jump6"> Parameter details and Algorithm  </span>
 **bin, gap and merge1**   
 These three parameters are the most important for the pipeline which define how to generate segment, how to cluster segment and judge the SV breakpoint.
 ![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig2.png)
@@ -174,7 +183,7 @@ Note: The default values of the pipeline are tested and examined with Homo sapie
 **merge2 and mmax**   
 This two parameters is about SV Event. SV breakpoints within a distance of merge2*bin are considered as one possible SV Event. However, one Event which the number of SV breakpoints over mmax may be a high frequency false positive region and will be abandoned.   
 
-## Result format explaination  
+## <span id="jump7"> Result format explaination   </span>
 There are two kinds of final result file, `final ` and `final.NoRegionFilter`, as described in Result file type above.
 They have the same format below:   
 
