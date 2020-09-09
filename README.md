@@ -175,29 +175,29 @@ Note: The default values of the pipeline are tested and examined with Homo sapie
 This two parameters is about SV Event. SV breakpoints within a distance of merge2*bin are considered as one possible SV Event. However, one Event which the number of SV breakpoints over mmax may be a high frequency false positive region and will be abandoned.   
 
 ## Result format explaination  
-There are two kind of final result file, `final ` and `final.NoRegionFilter`, as described in Result file type above.
+There are two kinds of final result file, `final ` and `final.NoRegionFilter`, as described in Result file type above.
 They have the same format below:   
 
 |  Parameter  | Description   |
 | :------------ | :------------ |
-|EventID | The ID of a SV Event，may contains one or more SV breakpoints and start with 'S' character. And take notice that it's not a high confidence SV breakpoint but just a nearby SV breakpoint for indication only When start with '*S'.|
+|EventID | The ID of a SV Event, may contains one or more SV breakpoints and start with 'S' character. And take notice that it's not a high confidence SV breakpoint but just a nearby SV breakpoint for indication only When start with '*S'.|
 |SvID | The ID of each unique SV breakpoint which counld be tracked since the `judge` file.|
 |BreakID1 | The ID of the first single end cluster which could be tracked since the `lnd.all` file.|
 |BreakID2 | The ID of the second single end cluster which could be tracked since the `lnd.all` file.|
 | ChrA | The contig name of the first single end cluster.|
-| PosA | The contig name of the first single end cluster.|
+| PosA | The contig position of the first single end cluster.|
 | ChrB | The contig name of the second single end cluster.|
-| PosB | The contig name of the second single end cluster.|
+| PosB | The contig position of the second single end cluster.|
 |ShareBarcode | The number of share barcodes between two single end clusters.|
 |RealType | The link direction type of two single end clusters: R means Right and L means Left.|
 |SimpleType | More human readable type. For example: RL for DEL, LR for DUP, LL or RR for INV.(Not applicable for complex SV cases)|
 |QualityScore | Comprehensive SV breakpoint score for all QC filter.|
 |ComprehensiveFilter | Simple judgment of SV breakpoint quality.|
 |HeatmapFilter | The score of 2D share barcode matrix by Wilcoxon rank-sum test. "NULL" means there is not enough data for this judgment.|
-|PhaseFilter | The judgment of barcode phase info.<br>The format is constructed with:<br> `judge:(HP of BP1-HP of BP2):phaseblock1:phaseblock2:P_value11,P_value12,P_value13,P_value21,P_value22,P_value23`<br>The P_values are P value of (1&#124;0), (0&#124;1) and (1&#124;1) for both SV breakpoint ends respectively by Fisher's exact test. "NULL:REGION" means this region is not phased, "NULL:COUNT" means there is not enough data and "NULL:UNPHASED" means that unphased barcodes are over 75%.
-|MapQFilter | The high map quantity ratio( > 10) of two single end clusters nearby.| 
-| PairEndFilter | The pair-end support for this SV breakpoint.<br>The format is constructed with:<br> `judge:+-,-+,--,++,PE support position`|
-|LocalizationFilter | This filter judge the symmetry and localization of share barcodes base on DNA fragment length statistics. <br>The format is constructed with:<br> `symmetry,localization1,localization2`<br> "SYM" means the share barcodes distribution is symmetrical on two single end cluster directions, otherwise it is unsymmetrical. "LONGER:xxxxx" means the SV end on its opposite direction is longer than the avg fragment length, which indicates a reliable SV breakpoint.|
+|PhaseFilter | The judgment of barcode phase info.<br>The format is constructed with: `judge:(HP of BP1 - HP of BP2):phaseblock1:phaseblock2:P_value11,P_value12,P_value13,P_value21,P_value22,P_value23`<br>The P_values are P value of (1&#124;0), (0&#124;1) and (1&#124;1) for both SV breakpoint ends respectively by Fisher's exact test. "NULL:REGION" means this region is not phased, "NULL:COUNT" means there is not enough data and "NULL:UNPHASED" means that unphased barcodes are over 75%.
+|MapQFilter | The high map quantity ratio(>10) of two single end clusters nearby.| 
+| PairEndFilter | The pair-end support for this SV breakpoint.<br>The format is constructed with: `judge:+-,-+,--,++:PE support position`|
+|LocalizationFilter | This filter judge the symmetry and localization of share barcodes base on DNA fragment length statistics. <br>The format is constructed with: `symmetry,localization1,localization2`<br> "SYM" means the share barcodes distribution is symmetrical on two single end cluster directions, otherwise it is unsymmetrical. "LONGER:xxxxx" means the SV end on its opposite direction is longer than the avg fragment length, which indicates a reliable SV breakpoint.|
 |BlackList | Mark the black region on two ends of the SV breakpoint.|
 |ControlList |Mark the control  region on the SV breakpoint.|
 |SegmentCheck1 | Additional segment check by `sc` parameter.|
