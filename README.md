@@ -228,4 +228,4 @@ A tool that help users to combine the stLFRsv result and [smoove](https://github
 A tool that help users to plot 2D share barcode heatmap from the `final` file or any other positions you want.   
 
 ## <span id="jump9"> Contact us  </span>
-If you have any problem while using this pipeline, please add a issue at [issues](https://github.com/BGI-biotools/stLFRsv/issues) or send an email to guojunfu@genomics.cn.
+If you have any problem while using this pipeline, please add an issue at [issues](https://github.com/BGI-biotools/stLFRsv/issues) or send an email to guojunfu@genomics.cn.
