@@ -15,7 +15,7 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 * **LFR-sv**: main program of the pipeline 
 * **run.sh**: example script
 
-**Note**: this pipeline is build by `Perl` and `C++`. For the convenience of using (not need to install Perl and additional packages), the `Perl` scripts are packed into binarys. Please add the `lib` PATH to LD_LIBRARY_PATH when get a `error while loading shared libraries......` error. If you get the pipeline through `git clone`, give executive permission(`chmod +x`) to `LFR-sv bin/*` files or you can download the package form the [release page](https://github.com/BGI-biotools/stLFRsv/releases).
+**Note**: This pipeline is build by `Perl` and `C++`. For the convenience of using (not need to install Perl and additional packages), the `Perl` scripts are packed into binarys. Please add the `lib` PATH to LD_LIBRARY_PATH when get a `error while loading shared libraries......` error. If you get the pipeline through `git clone`, give executive permission(`chmod +x`) to `LFR-sv bin/*` files or you can download the package form the [release page](https://github.com/BGI-biotools/stLFRsv/releases).
 (Of course, you can replace the binarys by *.pl in the src with a little modification in LFR-sv.pl)
 
 
@@ -27,88 +27,153 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 ###### Parameters:
 |  Parameter  |  Type | Description   |
 | :------------ | :------------ | :------------ |
-|-bam |\<string> |  original sorted and markduped bam file,if the index dose not exist, will be created.\[necessary\]|
-|-out |\<string> |  output SV dir.\[necessary\](warning:if exists, the output dir will be cleaned first!!!!!)|
-|-ncpu |\<int>  |   thread number for running pipeline.[default 1]|
-|-bar_th |\<int> |at least N read pairs in one barcode.[default 8]|
-|-seg_th| \<int> |at least N read pairs in one segment.[default 4]|
-|-gap |\<int> |define the gap size which should be considered as different segment.|
-|-size |\<int>| output SV length.[default 20000]|
-|-is |\<int> |proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]|
-|-bin |\<int>| bin size for cluster the segments.|
+|-bam |\<string> |  Original sorted and markduped bam file,if the index dose not exist, will be created.\[necessary\]|
+|-out |\<string> |  Output SV dir.\[necessary\](warning: If exists, the output dir will be cleaned first!!!!!)|
+|-ncpu |\<int>  |   Thread number for running pipeline.[default 1]|
+|-bar_th |\<int> |At least N read pairs in one barcode.[default 8]|
+|-seg_th| \<int> |At least N read pairs in one segment.[default 4]|
+|-gap |\<int> |Define the gap size which should be considered as different segment.|
+|-size |\<int>| Output SV length.[default 20000]|
+|-is |\<int> |Proper IS size for read pair library, read pairs with too large IS will be abandoned.[default 300]|
+|-bin |\<int>| Bin size for cluster the segments.|
 |-merge1 |\<int>| N continue outline bins could be considered as the same break point and will be merged into one evidence.|
 |-merge2 |\<int>| SVs nearby under N bin size will be considered as one event.[default 5]|
-|-mmax |\<int> |the max SVs allowed in one event.[default 4]|
-|-low |\<int>|lowest shared barcode counts threshold.[default 4]|
-|-sd |\<int>| break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]|
-|-p_th |\<float> |break ends significantly high with P value lower than this threshold will be considered as candidates.[default 0.1]|
-|-phase |\<string> |formatted phase result directory including phased barcode and region by chromosome.[default NULL]|
-|-bl| \<string> |black list file(BED format).[default NULL]|
-|-cl| \<string>| sorted control list file(BEDPE format).\[default NULL\](Be sure the chromosome and position are sorted in one line!!!)|
-|-sc |\<int>| allow max sv counts for the same position in one direction.[default 4]|
-|-human| \<Y/N>| for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
-|-qc1| \<float>| valid read pair ratio for SV detection.[default 0.60]|
-|-qc2 |\<int>| average read pair count for one barcode.[default 30]|
-|-qc3 |\<int>| average segment end count for one bin.[default 15]|
-|-sp |\<float>| sample percentage for DNA fragment length statistic.[default 0.2]|
-|-cn| \<int> |sample count for read pair distance statistic.[default 20000000]|
-|-rlen| \<int> |read length of one read.[default 100]|
-|-mlen |\<int>| physical limit for the long DNA segment.[default 400000]|
+|-mmax |\<int> |The max SVs allowed in one event.[default 4]|
+|-low |\<int>|Lowest shared barcode counts threshold.[default 4]|
+|-sd |\<int>| Break ends with a depth higher than avg_dep+N*sd will be considered as candidates.[default 3]|
+|-p_th |\<float> |Break ends significantly high with P value lower than this threshold will be considered as candidates.[default 0.1]|
+|-phase |\<string> |Formatted phase result directory including phased barcode and region by chromosome.[default NULL]|
+|-bl| \<string> |Black list file(BED format).[default NULL]|
+|-cl| \<string>| Sorted control list file(BEDPE format).\[default NULL\](Be sure the chromosome and position are sorted in one line!!!)|
+|-sc |\<int>| Allow max sv counts for the same position in one direction.[default 4]|
+|-human| \<Y/N>| For Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
+|-qc1| \<float>| Valid read pair ratio for SV detection.[default 0.60]|
+|-qc2 |\<int>| Average read pair count for one barcode.[default 30]|
+|-qc3 |\<int>| Average segment end count for one bin.[default 15]|
+|-sp |\<float>| Sample percentage for DNA fragment length statistic.[default 0.2]|
+|-cn| \<int> |Sample count for read pair distance statistic.[default 20000000]|
+|-rlen| \<int> |Read length of one read.[default 100]|
+|-mlen |\<int>| Physical limit for the long DNA segment.[default 400000]|
 |-help| |Show help message.|
 
 ## Result file type（by generate order）：
 **sbf file**  
-the binary segment file which generated form bam with the gap,bar_th,seg_th parameter  
-segment binary format：  
+The binary segment file which generated form bam with the gap, bar_th, seg_th parameter.  
+Segment binary format：  
 `(bar:int64)8byte(index:int32)4byte(contig_name:char)32byte(start:int32)4byte(end:int32)4byte(pe_count:int32)4byte`  
-the `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`(a simple read script at /src/bar-sort/read-sbf.pl)  
+The `index` means the Nth segment in this barcode，and the `bar` is combined barcode which constructed by `20bit_20bit_20bit` corresponding to `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-sbf.pl)  
 **bfi file**  
-binary index file for random access on sbf file  
-index binary format:  
+Binary index file for random access on sbf file.  
+Index binary format:  
 `(bar:int64)8byte(offset:int64)8bit`  
-the `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`(a simple read script at /src/bar-sort/read-bfi.pl)  
+The `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-bfi.pl)  
 **gap file**  
-include samples of gap between reads on segments of the largest contig, can be used to estimate parameters in `Auto Mode` 
+Include samples of gap between reads on segments of the largest contig, can be used to estimate parameters in `Auto Mode`. 
 **all.gap file**  
-include all gaps form all segments(barcodes), can be used to estimate parameters in `Manual Mode` 
+Include all gaps form all segments(barcodes), can be used to estimate parameters in `Manual Mode`. 
 **stat file**  
-include some statistical info from the bam   
+Include some statistical info from the bam.   
 **HQ.seg file**  
-include samples of high quality segment size in sbf file for statistics   
+Include samples of high quality segment size in sbf file for statistics.   
 **seg file**  
-include all segment size for each barcode split by `4294967295` in bam file   
+Include all segment size for each barcode split by `4294967295` in bam file.   
 **freq file**  
-include the possibilities that one barcode could cross a certain `N bp` gap without SVs for ALL and HQ barcodes   
+Include the possibilities that one barcode could cross a certain `N bp` gap without SVs for ALL and HQ barcodes.   
 **sin file**  
-single end cluster file，the `sin.raw` is the original sin file, and `sin` file is the merged file by `merge1` parameter  
+Single end cluster file，the `sin.raw` is the original sin file, and `sin` file is the merged file by `merge1` parameter.  
 **lnd.all file**  
 all suspect breakpoints with details.  
 **lnd file**  
-all passed breakpoints in `lnd.all` file that will be send to downstream analysis  
+all passed breakpoints in `lnd.all` file that will be send to downstream analysis.  
 **lns file**  
-segment link file, link the single end cluster to each segment  
+segment link file, link the single end cluster to each segment.  
 **sln file**  
-split link file, split the passed breakpoints by co-barcode on the same haplotype  
+split link file, split the passed breakpoints by co-barcode on the same haplotype.  
 **judge file**  
-passed breakpoints judged by several quality filter   
+passed breakpoints judged by several quality filter.   
 **filter file**  
-filter by additional LFR rules   
+filter by additional LFR rules.   
 **region file**  
-mark breakpoints by black list file and control list file  
+mark breakpoints by black list file and control list file.  
 **final file**  
-the final PASS SVs, and the `final.NoRegionFilter` is another final file that not considering the region markers  
+the final PASS SVs, and the `final.NoRegionFilter` is another final file that not considering the region markers.  
 **heatmap_plot folder**  
-the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you want  
+the heatmap of PASS SVs in final file. Or you can do it yourself using `/tools/plot_script` depend on which SVs you want.  
 
 ## Noun explanation
 ![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig1.png)
 **segment**   
-composed by several continue read pairs within a `gap` size, can be regarded as a DNA fragment without SVs. segment with read pairs more than `seg_th` is defined as `High Quality segment`   
+Composed by several continue read pairs within a `gap` size, can be regarded as a DNA fragment without SVs. Segment with read pairs more than `seg_th` is defined as `High Quality segment`.   
 **barcode**   
-include all read pairs with the same barcode tag. one barcode may contains one or more segment. barcode with read pairs more than `bar_th` is defined as `High Quality barcode`   
+Include all read pairs with the same barcode tag. One barcode may contains one or more segment. Barcode with read pairs more than `bar_th` is defined as `High Quality barcode`.   
 **single end cluster**   
-or may be called "single end breakpoint". several segments break at the same position and the same orientation, the cluster of these segments is defined as one `single end cluster`   
+Or may be called "single end breakpoint". Several segments break at the same position and the same orientation, the cluster of these segments is defined as one `single end cluster`.   
 **SV breakpoint**   
-or may be called "pair end breakpoint". when two `single end cluster` are linked by co-barcode, it is called one `SV breakpoint`   
+Or may be called "pair end breakpoint". When two `single end cluster` are linked by co-barcode, it is called one `SV breakpoint`.   
 **SV Event**   
-a general SV such as Deletion，Inversion，Duplication or Transaction etc. one `SV Event` maybe constructed by one or two (more than two sometimes) SV breakpoint   
+A general SV such as Deletion，Inversion，Duplication or Transaction etc. One `SV Event` maybe constructed by one or two (more than two sometimes) SV breakpoint.   
+
+## Parameter details and Algorithm 
+**bin, gap and merge1**   
+These three parameters are the most important for the pipeline which define how to generate segment, how to cluster segment and judge the SV breakpoint.
+![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig2.png)
+As shown in the pic above, the distance between read pairs follows a distribution which affected by the sequence depth, input DNA amount and DNA fragment length etc.
+* bin: Usually use a 65% quantile of read-pair size. This means 65% read pairs should be in a distance of bin size. Meanwhile, 65% quantile of read-pair size keeps a reasonable precision of breakpoint position.
+* merge1: Usually use a 93% quantile of read-pair size. When clustering segment ends using bin size, several clusters at the same orientation in nearby `merge1` bins should be form one real breakpoint and will be merged in `sin` file.
+* gap: Usually use a 98% quantile of read-pair size. For several continue read pairs on the same chromosome with the same barcode, segments are generated by split these read pairs using gap size.
+
+Pipeline offers `Auto Mode` and `Manual Mode` for these three parameters. 
+If users understand their data well and know exactly the gaps distribution of their standard library, they could specify the parameters manually. This should be more efficient and and avoiding statistical errors.
+If users didn't specify the parameters manually, `Auto Mode` will gather the gaps form the largest contig(chromosome) and generate these three parameters.   
+
+**bar_th and seg_th**
+As described in Noun explanation, these two parameters are used to define `HQ` barcode and segment. Usually it is not recommended to set lower values than defaults unless your DNA fragment length is too short.
+
+**SV detection size**
+`size` parameter set the SV size for the output. However, due to the `gap` and DNA fragment size, the pipeline will estimate the capability of SV detection size on specific data. Finally, pipeline will combine the `size` and the capability for output SV size(shown in the output message)
+
+**Specificity and Sensitivity**
+Three parameters are used to adjust the specificity and sensitivity: low, sd and p_th.
+![](https://github.com/BGI-biotools/stLFRsv/blob/master/graph/Fig3.png)
+* low: The lowest co-barcode between two single end cluster bin which will be chosen as candidate.
+* sd: As shown in pic above, one bin with segment single end depth higher than AVG+ sd*var is chosen as candidate.
+* p_th: As shown in pic above, depth of one bin significantly higher than bins around with P-value lower than p_th is chosen as candidate.
+
+Tips: Usually, when the data is poor(with QC warnings) or you just care SVs with large size or different contig(e.g. equilibrium translocation or other SV far greater than the capability for output SV size)，you could set a large `size`, lower `sd` and higher `p_th` to ensure the sensitivity with a little loss of specificity.
+
+**black list and control list**
+* bl: The parameter which set the black list file. Black list region should contain gaps, low coverage, low complex and reference assembly issue regions which are likely to give false positive SVs in BED format.
+* cl: The parameter which set the control list file. Control list region should contain segmental duplications, high population frequency and other systematical SV region which caused by aligner, sequencer and library method etc. The control list file should be provided in BEDPE format with inline sorted. The rule is: 
+		First order: contig name. 
+			When the contig names are different, remove `chr` form the name. If the remains are composed by numbers, then sorted by number. Otherwise, sorted by string. (from small to large) 
+			When the contig names are same, go to the second order.
+		Second order: position.
+			When the left positions are different, sorted by the left position.(from small to large) 
+			When the left positions are same, sorted by the right position.(from small to large）
+		Examples:
+			chr1 100000 300000 chr1 500000 800000
+			chr4 100000 300000 chr5 500000 800000
+			chr12 2200000 3000000 chr15 500000 800000
+			12 100000 300000 19 500000 800000
+			abc 100000 300000 cde 500000 800000
+			m 1050000 3080000 n 500000 800000
+
+**Phase files**
+The formatted phase files could be generated by raw [HapCUT2](https://github.com/vibansal/HapCUT2) results with a tool in `tools/gen_phase`. The `phase` parameter set the path of phase files directory.
+
+**Quantity control**
+There are four values in the `stat` file split by tab in the first line: Total valid read pair, HQ valid read pair, HQ barcode and HQ segment.
+Three QC parameters was defined by:
+* qc1: HQ read pair ratio = HQ valid read pair/Total valid read pair
+* qc2: avg read pairs on one barcode = HQ valid read pair/HQ barcode
+* qc3: avg segments end coverage in one bin = HQ segment*2/(ref_total_len/bin_size)
+
+Note: The default values of the pipeline are tested and examined with Homo sapiens data of standard stLFRkit. If you use linked read data of other protocol or species, please make some test runs of standard samples to adjust the qc parameters.
+
+**merge2 and mmax**
+This two parameters is about SV Event. SV breakpoints within a distance of merge2*bin are considered as one possible SV Event. However, one Event which the number of SV breakpoints over mmax may be a high frequency false positive region and will be abandoned.   
+
+
+
+
+
