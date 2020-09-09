@@ -224,7 +224,7 @@ A tool that convert HapCUT2 result files to phase files which can be used by the
 A tool that help users to build their own control list file through a batch of `lnd.all` files form their own data.   
 **merge_smoove**   
 A tool that help users to combine the stLFRsv result and [smoove](https://github.com/brentp/smoove) result.   
-**plot_script**
+**plot_script**   
 A tool that help users to plot 2D share barcode heatmap from the `final` file or any other positions you want.   
 
 ## <span id="jump9"> Contact us  </span>
