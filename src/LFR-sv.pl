@@ -80,8 +80,8 @@ Options:
 	-cl <string> sorted control list file(BEDPE format).[default NULL](Be sure the chromosome and position are sorted in one line!!!)
 	-sc <int> allow max sv counts for the same position in one direction.[default 4]
 	-human <Y/N> for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]
-	-qc1 <float> valid read pair ratio for SV detection.[default 0.60]
-	-qc2 <float> average read pair count for one barcode.[default 30]
+	-qc1 <float> valid read pair ratio for SV detection.[default 0.70]
+	-qc2 <float> average read pair count for one segment.[default 20]
 	-qc3 <float> average segment end count for one bin.[default 15]
 	-sp <float> sample percentage for DNA fragment length statistic.[default 0.2]
 	-cn <int> sample count for read pair distance statistic.[default 20000000]
@@ -138,8 +138,8 @@ $id_num||=4;
 $Smerge||=5;
 $human||="N";
 $mergemax ||=4;
-$qc1 ||=0.6;
-$qc2 ||=30;
+$qc1 ||=0.70;
+$qc2 ||=20;
 $qc3 ||=15;
 $rlen ||=100;
 $mlen ||=400000;
@@ -264,21 +264,34 @@ my $tl=<IN>;
 close IN;
 chomp $tl;
 my ($tread,$vread,$vbar,$vseg)=split(/\t/,$tl);
-my $q1=$vread/$tread;
-my $q2=$vread/$vbar;
-my $q3=$vseg*2/($reflen/$bin);
+my $q1=sprintf("%.2f",$vread/$tread);
+my $q2=sprintf("%.2f",$vread/$vseg);
+my $q3=sprintf("%.2f",$vseg*2/($reflen/$bin));
+my $BC=sprintf("%.2f",$vseg/$vbar);
+
+my $qcheck=0;
 if($q1 < $qc1){
 	print STDERR "Warning: valid read pair ratio $q1 is lower than $qc1, the result may be unreliable!\n";
+	$qcheck=1;
 }
 
 if($q2 < $qc2){
-	print STDERR "Warning: average read pair on one barcode $q2 is lower than $qc2, the result may be unreliable!\n";
+	print STDERR "Warning: average read pair on one segment $q2 is lower than $qc2, the result may be unreliable!\n";
+	$qcheck=1;
 }
 
 if($q3 < $qc3){
 	print STDERR "Warning: average segment end in one bin $q3 is lower than $qc3, the result may be unreliable!\n";
+	$qcheck=1;
 }
 
+if($qcheck){
+	print STDERR "QC warning was triggered!\nIt is recommended to set a large \'size\', lower \'sd\' and higher \'p_th\' than defaults to ensure the sensitivity with a little loss of specificity.(e.g. sd=2)\n";
+}
+
+if($BC > 3){
+	print STDERR "The data being processed came with a Barcode Conflict over 3, it's strongly recommended to check your data and library protocol before any further step!!\n";
+}
 
 unless($stat){
 	my $R = Statistics::R->new();

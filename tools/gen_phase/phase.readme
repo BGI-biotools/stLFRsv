@@ -24,7 +24,7 @@ Example:
 gen_phase/get_barcode_from_phase hg19.fa sorted.bam chr1.vcf chr1.barcode.phase
 
 NOTE；
-The refrence file should match the bam file which it generated form。
+The reference file should match the bam file which it generated form。
 And the file name should as the same as chromosome name in the reference file and the bam header.
 stLFRsv pipeline recognize these files by chromosome names.
 (hapblock_L0_XXX, XXX.region, XXX.vcf, XXX.barcode.phase)
