@@ -79,9 +79,9 @@ Index binary format:
 `(bar:int64)8byte(offset:int64)8bit`  
 The `bar` is only valid in the lower 40bit corresponding to the 1st and 2st part of `XXX_XXX_XXX`.(a simple read script at /src/bar-sort/read-bfi.pl)  
 **gap file**  
-Include samples of gap between reads on segments of the largest contig, can be used to estimate parameters in `Auto Mode`. 
+Include samples of gap between reads on segments of the largest contig, can be used to estimate parameters in `Auto Mode`.   
 **all.gap file**  
-Include all gaps form all segments(barcodes), can be used to estimate parameters in `Manual Mode`. 
+Include all gaps form all segments(barcodes), can be used to estimate parameters in `Manual Mode`.   
 **stat file**  
 Include some statistical info from the bam.   
 **HQ.seg file**  
