@@ -58,8 +58,8 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-cl| \<string>| Sorted control list file(BEDPE format).\[default NULL\](Be sure the chromosome and position are sorted in one line!!!)|
 |-sc |\<int>| Allow max sv counts for the same position in one direction.[default 4]|
 |-human| \<Y/N>| For Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
-|-qc1| \<float>| Valid read pair ratio for SV detection.[default 0.60]|
-|-qc2 |\<int>| Average read pair count for one barcode.[default 30]|
+|-qc1| \<float>| Valid read pair ratio for SV detection.[default 0.70]|
+|-qc2 |\<int>| Average read pair count for one segment.[default 20]|
 |-qc3 |\<int>| Average segment end count for one bin.[default 15]|
 |-sp |\<float>| Sample percentage for DNA fragment length statistic.[default 0.2]|
 |-cn| \<int> |Sample count for read pair distance statistic.[default 20000000]|
@@ -87,7 +87,7 @@ Include some statistical info from the bam.
 **HQ.seg file**  
 Include samples of high quality segment size in sbf file for statistics.   
 **seg file**  
-Include all segment size for each barcode split by `4294967295` in bam file.   
+Include all segment size in bam file, split by `4294967295` for each barcode .   
 **freq file**  
 Include the possibilities that one barcode could cross a certain `N bp` gap without SVs for ALL and HQ barcodes.   
 **sin file**  
