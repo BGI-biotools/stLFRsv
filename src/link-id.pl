@@ -405,7 +405,7 @@ sub searchBest{
 	my $judge_dep= ($supa < $supb) ? $supa : $supb;
 	
 	my $jcount=@id;
-	if($best >= 2*$share->[$checkid[0]]->{$checkid[1]} and $share->[$checkid[0]]->{$checkid[1]} >= int($judge_dep * $seg_freq{$judge_len} + 0.5) and $jcount> int(($Nmerge**2)/2)){
+	if($best >= 2*0.95*$share->[$checkid[0]]->{$checkid[1]} and $share->[$checkid[0]]->{$checkid[1]} >= int($judge_dep * $seg_freq{$judge_len}*0.95 + 0.5) and $jcount> int(($Nmerge**2)/2)){
 		$qual="PASS";
 	}else{
 		$qual="Lowqual";
@@ -836,7 +836,7 @@ sub S_endcheck{
 p<-wilcox.test(case,control,paired=F, conf.level = 0.95,alternative='g',exact=T,correct=F)
 };
 	$R->run($cmd);
-	my $p_value=$R->get('p$p.value');
+	my $p_value=sprintf("%.2f",int($R->get('p$p.value')*100)/100);
 	
 	# print "$index\t$p_value\n";
 	# print join(",",@case_value),"\t",join(",",@control_value),"\n";
