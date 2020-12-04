@@ -6,3 +6,6 @@ lnd.all file list: one all file one line, see the test.list for example
 bin_size: bin size used in the pipleine
 
 extend_bin_num: as the merge1 parameter in the pipeline
+
+the last four columns of out_file are the counts for RL, LR, LL, RR connections, please select the line depends on your own requests as the control list(by count or ratio).
+for example, we select the lines with total counts over 5.
