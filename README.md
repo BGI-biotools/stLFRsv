@@ -59,12 +59,13 @@ This tool is applicable to stLFR technology and similar co-barcode data. Current
 |-sc |\<int>| Allow max sv counts for the same position in one direction.[default 4]|
 |-human| \<Y/N>| For Homo sapiens,keep only [1234567890XYM] chromosome.[default N]|
 |-qc1| \<float>| Valid read pair ratio for SV detection.[default 0.70]|
-|-qc2 |\<int>| Average read pair count for one segment.[default 20]|
-|-qc3 |\<int>| Average segment end count for one bin.[default 15]|
+|-qc2 |\<float>| Average read pair count for one segment.[default 20]|
+|-qc3 |\<float>| Average segment end count for one bin.[default 7.5]|
 |-sp |\<float>| Sample percentage for DNA fragment length statistic.[default 0.2]|
 |-cn| \<int> |Sample count for read pair distance statistic.[default 20000000]|
 |-rlen| \<int> |Read length of one read.[default 100]|
 |-mlen |\<int>| Physical limit for the long DNA segment.[default 400000]|
+|-ext_cov |\<float>| Threshold of segment extended coverage, which decides the length of region in QC stage.[default 4]|
 |-help| |Show help message.|
 
 ## <span id="jump4"> Result file type（by generate order）： </span>
@@ -186,6 +187,9 @@ Note: The default values of the pipeline are tested and examined with Homo sapie
 
 **merge2 and mmax**   
 This two parameters is about SV Event. SV breakpoints within a distance of merge2*bin are considered as one possible SV Event. However, one Event which the number of SV breakpoints over mmax may be a high frequency false positive region and will be abandoned.   
+
+**ext_cov**   
+The definition of QC region in QC stage: from the breakpoint position to the position which LFR segment coverage fewer than `ext_cov` based on the LFR segment length statistic.   
 
 ## <span id="jump7"> Result format explaination   </span>
 There are two kinds of final result file, `final ` and `final.NoRegionFilter`, as described in Result file type above.
