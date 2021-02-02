@@ -7,9 +7,9 @@ use threads;
 use threads::shared;
 use Thread::Queue;
 
-die "Usage: $0 <link all file> <split id file> <indexed bam file> <seg_len_freq> <phase info dir> <out file> <check size> <gap size> <merge_bin> <ncpu>\n" if @ARGV != 10;
+die "Usage: $0 <link all file> <split id file> <indexed bam file> <seg_len_freq> <phase info dir> <out file> <check size> <gap size> <merge_bin> <seg_ext_cov> <ncpu>\n" if @ARGV != 11;
 
-my ($cluster,$split,$bamfile,$freqfile,$phase_dir,$outfile,$size,$gap,$Nmerge,$ncpu)=@ARGV;
+my ($cluster,$split,$bamfile,$freqfile,$phase_dir,$outfile,$size,$gap,$Nmerge,$seg_ext_cov,$ncpu)=@ARGV;
 
 my %reflen;
 if(1){
@@ -439,7 +439,7 @@ sub checkfour{
 	my (@exp1,@exp2);
 	foreach my $i(sort {$a <=> $b} keys %seg_freq){
 		my $exp=$seg_freq{$i}*$avg_bar_dep1/2;
-		if($exp >= 4){
+		if($exp > $seg_ext_cov){
 			$max_len1=$i;
 			push @exp2,$exp;
 		}else{
@@ -449,7 +449,7 @@ sub checkfour{
 	
 	foreach my $i(sort {$a <=> $b} keys %seg_freq){
 		my $exp=$seg_freq{$i}*$avg_bar_dep2/2;
-		if($exp >= 4){
+		if($exp > $seg_ext_cov){
 			$max_len2=$i;
 			push @exp1,$exp;
 		}else{

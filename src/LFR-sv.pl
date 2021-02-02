@@ -46,6 +46,7 @@ my $mlen;
 my $sp;
 my $cn;
 my $bin_r;
+my $seg_ext_cov;
 my $help;
 
 
@@ -54,7 +55,7 @@ my $Basename=basename($0);
 my $USAGE = qq{
 Name:
 	$Basename
-	version 2.2
+	version 2.2.4
 Function:
 	Detect the SVs from stLFR WGS data
 Usage:
@@ -82,11 +83,12 @@ Options:
 	-human <Y/N> for Homo sapiens,keep only [1234567890XYM] chromosome.[default N]
 	-qc1 <float> valid read pair ratio for SV detection.[default 0.70]
 	-qc2 <float> average read pair count for one segment.[default 20]
-	-qc3 <float> average segment end count for one bin.[default 15]
+	-qc3 <float> average segment end count for one bin.[default 7.5]
 	-sp <float> sample percentage for DNA fragment length statistic.[default 0.2]
 	-cn <int> sample count for read pair distance statistic.[default 20000000]
 	-rlen <int> read length of one read.[default 100]
 	-mlen <int> physical limit for the long DNA segment.[default 400000]
+	-ext_cov <float> threshold of segment extended coverage, which decides the length of region in QC stage.[default 4]
 	-help Show this message.
 };
 
@@ -117,34 +119,36 @@ $valid = GetOptions(
 "qc2=f" => \$qc2,
 "qc3=f" => \$qc3,
 "sp=f" => \$sp,
+"ext_cov=f" => \$seg_ext_cov,
 "cn=i" => \$cn,
 "rlen=i" => \$rlen,
 "mlen=i" => \$mlen
 );
 
-$ncpu ||= 1;
-$tmp ||= "/tmp";
-$bar_th||=8;
-$seg_th ||= 4;
-$size ||= 20000;
-$is ||=300;
-$low ||=4;
-$sd ||=3;
-$p_th ||=0.1;
-$phase_dir ||="NULL";
-$black_list||="NULL";
-$control_list||="NULL";
-$id_num||=4;
-$Smerge||=5;
-$human||="N";
-$mergemax ||=4;
-$qc1 ||=0.70;
-$qc2 ||=20;
-$qc3 ||=15;
-$rlen ||=100;
-$mlen ||=400000;
-$sp ||=0.2;
-$cn ||=20000000;
+$ncpu = 1 unless defined $ncpu;
+$tmp = "/tmp" unless defined $tmp;
+$bar_th = 8 unless defined $bar_th;
+$seg_th = 4 unless defined $seg_th;
+$size = 20000 unless defined $size;
+$is = 300 unless defined $is;
+$low = 4 unless defined $low;
+$sd = 3 unless defined $sd;
+$p_th = 0.1 unless defined $p_th;
+$phase_dir  = "NULL" unless defined $phase_dir;
+$black_list = "NULL" unless defined $black_list;
+$control_list = "NULL" unless defined $control_list;
+$id_num = 4 unless defined $id_num;
+$Smerge = 5 unless defined $Smerge;
+$human = "N" unless defined $human;
+$mergemax = 4 unless defined $mergemax;
+$qc1  = 0.70 unless defined $qc1;
+$qc2  = 20 unless defined $qc2;
+$qc3  = 7.5 unless defined $qc3;
+$rlen  = 100 unless defined $rlen;
+$mlen  = 400000 unless defined $mlen;
+$sp = 0.2 unless defined $sp;
+$cn = 20000000 unless defined $cn;
+$seg_ext_cov = 4 unless defined $seg_ext_cov;
 
 die "$USAGE" unless (($bam and $out) and !$help);
 
@@ -266,7 +270,7 @@ chomp $tl;
 my ($tread,$vread,$vbar,$vseg)=split(/\t/,$tl);
 my $q1=sprintf("%.2f",$vread/$tread);
 my $q2=sprintf("%.2f",$vread/$vseg);
-my $q3=sprintf("%.2f",$vseg*2/($reflen/$bin));
+my $q3=sprintf("%.2f",$vseg/($reflen/$bin));
 my $BC=sprintf("%.2f",$vseg/$vbar);
 
 my $qcheck=0;
@@ -442,7 +446,7 @@ if(executeSystemCall($line)){
 
 #step5
 print STDERR "Step_5 judge the link Quality\n";
-$line="judge-link $out/$bamname.lnd.all $out/$bamname.sln $bam $out/$bamname.freq $phase_dir $out/$bamname.judge $bin $gap $Nmerge $ncpu";
+$line="judge-link $out/$bamname.lnd.all $out/$bamname.sln $bam $out/$bamname.freq $phase_dir $out/$bamname.judge $bin $gap $Nmerge $seg_ext_cov $ncpu";
 if(executeSystemCall($line)){
 	die "Failure during creating the judgement file $out/$bamname.judge\n";
 }
